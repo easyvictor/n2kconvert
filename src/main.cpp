@@ -25,11 +25,8 @@
 #include "N2kDataToNMEA0183.h"
 #include "BoardSerialNumber.h"
 #include <iostream>
+#include <unistd.h>
 #include "NMEA0183LinuxStream.h"
-
-tNMEA2000_SocketCAN NMEA2000((char*)"vcan0");
-tNMEA0183LinuxStream NMEA0183OutStream("/dev/n2kout");
-tSocketStream ForwardStream;
 
 // Reading serial number depends of used board. BoardSerialNumber module
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
@@ -37,19 +34,19 @@ tSocketStream ForwardStream;
 #define DefaultSerialNumber 999999
 uint32_t GetSerialNumber() {
   uint32_t Sno=GetBoardSerialNumber();
-
   return ( Sno!=0?Sno:DefaultSerialNumber );
 }
-
-tNMEA0183 NMEA0183_Out;
-tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183_Out);
 
 // Set the information for other bus devices, which messages we support
 const unsigned long TransmitMessages[] PROGMEM={0};
 const unsigned long ReceiveMessages[] PROGMEM={/*126992L,*/127250L,127258L,128259UL,128267UL,129025UL,129026L,129029L,0};
 
 // *****************************************************************************
-void setup() {
+void setup( tNMEA2000& NMEA2000,
+            tNMEA0183LinuxStream& NMEA0183OutStream,
+            tNMEA0183& NMEA0183_Out,
+            tN2kDataToNMEA0183& N2kDataToNMEA0183,
+            tSocketStream& ForwardStream) {
   // Setup NMEA2000 system
 
   char SnoStr[33];
@@ -58,7 +55,7 @@ void setup() {
 
   NMEA2000.SetProductInformation(SnoStr, // Manufacturer's Model serial code
                                  120, // Manufacturer's product code
-                                 "N2k->NMEA0183",  // Manufacturer's Model ID
+                                 "n2kconvert",  // Manufacturer's Model ID
                                  "1.0.0.1 (2018-04-03)",  // Manufacturer's Software version code
                                  "1.0.0.0 (2018-04-03)" // Manufacturer's Model version
                                  );
@@ -84,10 +81,6 @@ void setup() {
   NMEA0183_Out.Open();
 }
 
-#if defined(__linux__)||defined(__linux)||defined(linux)
-#include <unistd.h>
-#endif
-
 // *****************************************************************************
 // This is preliminary definition. For RPi we need to build some
 // event system to minimize cpu usage.
@@ -96,20 +89,20 @@ void WaitForEvent() {
 }
 
 // *****************************************************************************
-void loop() {
-  WaitForEvent();
-  NMEA2000.ParseMessages();
-  N2kDataToNMEA0183.Update();
-}
-
-#ifndef ARDUINO
-// *****************************************************************************
-int main(void) {
-  setup();
+int main(int argc, char** argv) {
+  // Parse arguments
+  tNMEA2000_SocketCAN NMEA2000((char*)"vcan0");
+  tNMEA0183LinuxStream NMEA0183OutStream("/dev/n2kout");
+  tSocketStream ForwardStream;
+  tNMEA0183 NMEA0183_Out;
+  tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183_Out);
+  setup(NMEA2000, NMEA0183OutStream, NMEA0183_Out, N2kDataToNMEA0183, ForwardStream);
   std::cout << "Running!" << std::endl;
-  while ( true ) loop();
+  while ( true ) {
+    WaitForEvent();
+    NMEA2000.ParseMessages();
+    N2kDataToNMEA0183.Update();
+  }
 
   return 0;
 }
-#endif
-
