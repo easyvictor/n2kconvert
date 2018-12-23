@@ -1,0 +1,7 @@
+/var/log/kplex {
+	daily
+	rotate 6
+	compress
+	missingok
+	notifempty
+}
