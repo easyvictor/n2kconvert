@@ -32,14 +32,18 @@ set(NMEA0183_DIR "${CMAKE_SOURCE_DIR}/../NMEA0183")
 project(${PROJ_NAME})
 
 file(GLOB MAIN_SRC
-    "src/*.cpp"
+    "src/BoardSerialNumber.cpp"
+    "src/N2kDataToNMEA0183.cpp"
+    "src/main.cpp"
 )
 
 add_subdirectory("${NMEA2000_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA2000")
 add_subdirectory("${NMEA2000_SOCKETCAN_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA2000socketCAN")
 add_subdirectory("${NMEA0183_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA0183")
 
-add_executable(${PROJ_NAME} ${MAIN_SRC})
+add_executable(${PROJECT_NAME} ${MAIN_SRC})
 
-target_link_libraries(${PROJ_NAME} nmea0183 nmea2000socketcan nmea2000)
+target_link_libraries(${PROJECT_NAME} nmea0183 nmea2000socketcan nmea2000)
+
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 
