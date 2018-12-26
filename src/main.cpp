@@ -26,7 +26,9 @@
 #include "BoardSerialNumber.h"
 #include <iostream>
 #include <unistd.h>
+#include <syslog.h>
 #include "NMEA0183LinuxStream.h"
+#include "Options.h"
 
 // Reading serial number depends of used board. BoardSerialNumber module
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
@@ -44,7 +46,7 @@ const unsigned long ReceiveMessages[] PROGMEM={/*126992L,*/127250L,127258L,12825
 // *****************************************************************************
 void setup( tNMEA2000& NMEA2000,
             tNMEA0183LinuxStream& NMEA0183OutStream,
-            tNMEA0183& NMEA0183_Out,
+            tNMEA0183& NMEA0183,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
             tSocketStream& ForwardStream) {
   // Setup NMEA2000 system
@@ -77,8 +79,8 @@ void setup( tNMEA2000& NMEA2000,
   NMEA2000.Open();
 
   // Setup NMEA0183 ports and handlers
-  NMEA0183_Out.SetMessageStream(&NMEA0183OutStream);
-  NMEA0183_Out.Open();
+  NMEA0183.SetMessageStream(&NMEA0183OutStream);
+  NMEA0183.Open();
 }
 
 // *****************************************************************************
@@ -89,14 +91,27 @@ void WaitForEvent() {
 }
 
 // *****************************************************************************
-int main(int argc, char** argv) {
-  // Parse arguments
-  tNMEA2000_SocketCAN NMEA2000((char*)"vcan0");
-  tNMEA0183LinuxStream NMEA0183OutStream("/dev/n2kout");
+int main(int argc, char* argv[]) {
+  // Parse arguments from cmd line annd oad config file
+  string config_file, can_port, out_stream;
+  bool background_mode = false;
+  bool options_ok = false;
+  options_ok = SetOptions(argc, argv, // inputs
+    &config_file, &can_port, &out_stream, &background_mode // outputs
+    );
+  if (!options_ok)
+    return 1;
+
+  // Init var log 
+  
+
+
+  tNMEA2000_SocketCAN NMEA2000((char*)can_port.c_str());
+  tNMEA0183LinuxStream NMEA0183OutStream(out_stream.c_str());
   tSocketStream ForwardStream;
-  tNMEA0183 NMEA0183_Out;
-  tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183_Out);
-  setup(NMEA2000, NMEA0183OutStream, NMEA0183_Out, N2kDataToNMEA0183, ForwardStream);
+  tNMEA0183 NMEA0183;
+  tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183);
+  setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream);
   std::cout << "Running!" << std::endl;
   while ( true ) {
     WaitForEvent();

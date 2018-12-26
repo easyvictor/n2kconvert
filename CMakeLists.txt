@@ -34,16 +34,23 @@ project(${PROJ_NAME})
 file(GLOB MAIN_SRC
     "src/BoardSerialNumber.cpp"
     "src/N2kDataToNMEA0183.cpp"
+    "src/Options.cpp"
     "src/main.cpp"
 )
 
+FIND_PACKAGE( Boost 1.65.1 COMPONENTS program_options REQUIRED )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 add_subdirectory("${NMEA2000_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA2000")
 add_subdirectory("${NMEA2000_SOCKETCAN_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA2000socketCAN")
 add_subdirectory("${NMEA0183_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA0183")
 
 add_executable(${PROJECT_NAME} ${MAIN_SRC})
 
-target_link_libraries(${PROJECT_NAME} nmea0183 nmea2000socketcan nmea2000)
+target_link_libraries(${PROJECT_NAME}
+	nmea0183
+	nmea2000socketcan
+	nmea2000
+	${Boost_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
 
