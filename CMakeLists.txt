@@ -38,8 +38,8 @@ file(GLOB MAIN_SRC
     "src/main.cpp"
 )
 
-FIND_PACKAGE( Boost 1.65.1 COMPONENTS program_options REQUIRED )
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+find_package( Boost 1.65.1 COMPONENTS program_options REQUIRED )
+include_directories( ${Boost_INCLUDE_DIR} )
 add_subdirectory("${NMEA2000_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA2000")
 add_subdirectory("${NMEA2000_SOCKETCAN_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA2000socketCAN")
 add_subdirectory("${NMEA0183_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/buildNMEA0183")
