@@ -40,8 +40,18 @@ uint32_t GetSerialNumber() {
 }
 
 // Set the information for other bus devices, which messages we support
-const unsigned long TransmitMessages[] PROGMEM={0};
-const unsigned long ReceiveMessages[] PROGMEM={/*126992L,*/127250L,127258L,128259UL,128267UL,129025UL,129026L,129029L,0};
+const unsigned long TransmitMessages[] = {0};
+const unsigned long ReceiveMessages[] = {
+  //126992L, // System time
+  127250L, // Heading
+  127258L, // Magnetic Variation
+  128259UL, // Boat Speed
+  128267UL, // Depth
+  129025UL, // Lat/Lon rapid
+  129026L, // COG SOG rapid
+  129029L, // GNSS Data
+  0
+};
 
 // *****************************************************************************
 void setup( tNMEA2000& NMEA2000,
