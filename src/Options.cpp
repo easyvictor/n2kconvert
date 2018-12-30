@@ -43,7 +43,7 @@ bool SetOptions(int argc, char* argv[],
     cout << "Using config file: " << *config_file << "\n";
   ifstream config_fstream(config_file->c_str(), ifstream::in);
   if (!config_fstream) {
-    cout << "Cannot open config file: " << *config_file << "\n";
+    cerr << "Cannot open config file: " << *config_file << "\n";
   } else {
     po::store(po::parse_config_file(config_fstream, options_generic), vm);
     po::notify(vm);
