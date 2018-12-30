@@ -115,11 +115,9 @@ void WaitForEvent() {
 int main(int argc, char* argv[]) {
   // Parse arguments from cmd line annd oad config file
   string config_file, can_port, out_stream;
-  bool background_mode = false;
   bool status_ok = false;
   status_ok = SetOptions(argc, argv, // inputs
-    &config_file, &can_port, &out_stream, &background_mode // outputs
-  );
+    &config_file, &can_port, &out_stream); // outputs
   if (!status_ok) {
     cerr << "Problem loading options. Exiting.\n";
     return 3;

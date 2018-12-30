@@ -11,8 +11,7 @@ const string default_can_port = "can0";
 const string default_out_stream = "/dev/stdout";
 
 bool SetOptions(int argc, char* argv[],
-  string* config_file, string* can_port, string* out_stream,
-  bool* background_mode) {
+  string* config_file, string* can_port, string* out_stream) {
   // Declare the supported options.
   po::options_description options_generic("Config or cmd line options");
   options_generic.add_options()
@@ -26,8 +25,6 @@ bool SetOptions(int argc, char* argv[],
     ("help", "produce help message")
     ("config,f", po::value<string>(config_file)->default_value(default_config_file), 
       "configuration file name.")
-    ("background,b",
-      "run in background.")
   ;
   po::options_description options_all("All options");
   options_all.add(options_generic).add(options_cmdline_only);
@@ -52,12 +49,6 @@ bool SetOptions(int argc, char* argv[],
     cout << "Reading can port: " << *can_port << "\n";
   if (vm.count("output"))
     cout << "Writing data to: " << *out_stream << "\n";
-  if (vm.count("background")) {
-    *background_mode = true;
-    cout << "Running in background mode.\n";
-  } else {
-    *background_mode = false;
-  }
-  // Change this to true when ready to start using program for real
+
   return true;
 }

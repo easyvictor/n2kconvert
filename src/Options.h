@@ -3,7 +3,6 @@
 #include <string>
 
 bool SetOptions(int argc, char * argv[], // inputs
-  std::string* config_file, std::string* can_port, std::string* out_stream, // outputs
-  bool* background_mode); // outputs
+  std::string* config_file, std::string* can_port, std::string* out_stream); // output
 
 #endif // OPTIONS_H
