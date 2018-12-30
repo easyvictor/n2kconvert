@@ -52,6 +52,8 @@ const unsigned long ReceiveMessages[] = {
   0
 };
 
+using namespace std;
+
 // *****************************************************************************
 void setup( tNMEA2000& NMEA2000,
             tNMEA0183LinuxStream& NMEA0183OutStream,
@@ -107,26 +109,25 @@ int main(int argc, char* argv[]) {
   bool options_ok = false;
   options_ok = SetOptions(argc, argv, // inputs
     &config_file, &can_port, &out_stream, &background_mode // outputs
-    );
-  if (!options_ok)
+  );
+  if (!options_ok) {
+    cerr << "Problem loading options, quitting.\n"
     return 1;
-
-  // Init var log 
-  
-
-
+  }
+  // Create parsing objects
   tNMEA2000_SocketCAN NMEA2000((char*)can_port.c_str());
   tNMEA0183LinuxStream NMEA0183OutStream(out_stream.c_str());
   tSocketStream ForwardStream;
   tNMEA0183 NMEA0183;
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183);
+  // Setup parsing objects
   setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream);
+  // Program loop
   std::cout << "Running!" << std::endl;
   while ( true ) {
     WaitForEvent();
     NMEA2000.ParseMessages();
     N2kDataToNMEA0183.Update();
   }
-
   return 0;
 }
