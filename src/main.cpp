@@ -52,6 +52,7 @@ const unsigned long ReceiveMessages[] = {
   0
 };
 
+// For cout and cerr
 using namespace std;
 
 // *****************************************************************************
@@ -59,7 +60,8 @@ bool setup( tNMEA2000& NMEA2000,
             tNMEA0183LinuxStream& NMEA0183OutStream,
             tNMEA0183& NMEA0183,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
-            tSocketStream& ForwardStream) {
+            tSocketStream& ForwardStream, 
+            bool enable_fwd_stream) {
   bool status = false;
 
   // Setup NMEA2000 system
@@ -79,10 +81,13 @@ bool setup( tNMEA2000& NMEA2000,
                                 25, // Device class=Inter/Intranetwork Device. See codes on http://www.nmea.org/Assets/20120726%20nmea%202000%20class%20%26%20function%20codes%20v%202.00.pdf
                                 2046 // Just choosen free from code list on http://www.nmea.org/Assets/20121020%20nmea%202000%20registration%20list.pdf
                                );
+  // Forward settings
   NMEA2000.SetForwardStream(&ForwardStream);
   NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
+  NMEA2000.EnableForward(enable_fwd_stream);
+  // Mode
   NMEA2000.SetMode(tNMEA2000::N2km_ListenAndNode,25);
-  //NMEA2000.EnableForward(false);
+  // Message settings
   NMEA2000.ExtendTransmitMessages(TransmitMessages);
   NMEA2000.ExtendReceiveMessages(ReceiveMessages);
   NMEA2000.AttachMsgHandler(&N2kDataToNMEA0183);
@@ -115,9 +120,10 @@ void WaitForEvent() {
 int main(int argc, char* argv[]) {
   // Parse arguments from cmd line annd oad config file
   string config_file, can_port, out_stream;
+  bool debug_mode = false;
   bool status_ok = false;
   status_ok = SetOptions(argc, argv, // inputs
-    &config_file, &can_port, &out_stream); // outputs
+    &config_file, &can_port, &out_stream, &debug_mode); // outputs
   if (!status_ok) {
     cerr << "Problem loading options. Exiting.\n";
     return 3;
@@ -129,7 +135,7 @@ int main(int argc, char* argv[]) {
   tNMEA0183 NMEA0183;
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183);
   // Setup parsing objects
-  status_ok = setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream);
+  status_ok = setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream, debug_mode);
   if (!status_ok) {
     cerr << "Problem during setup. Exiting.\n";
     return 3;

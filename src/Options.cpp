@@ -11,7 +11,9 @@ const string default_can_port = "can0";
 const string default_out_stream = "/dev/stdout";
 
 bool SetOptions(int argc, char* argv[],
-  string* config_file, string* can_port, string* out_stream) {
+  string* config_file, string* can_port, string* out_stream,
+  bool* debug_mode) {
+  *debug_mode = false;
   // Declare the supported options.
   po::options_description options_generic("Config or cmd line options");
   options_generic.add_options()
@@ -25,6 +27,7 @@ bool SetOptions(int argc, char* argv[],
     ("help", "produce help message")
     ("config,f", po::value<string>(config_file)->default_value(default_config_file), 
       "configuration file name.")
+    ("debug,d", "debug mode (send all data to stdout)")
   ;
   po::options_description options_all("All options");
   options_all.add(options_generic).add(options_cmdline_only);
@@ -44,6 +47,11 @@ bool SetOptions(int argc, char* argv[],
   } else {
     po::store(po::parse_config_file(config_fstream, options_generic), vm);
     po::notify(vm);
+  }
+  if (vm.count("debug")) {
+    cout << "Debug mode enabled!\n";
+    *debug_mode = true;
+    *out_stream = "/dev/stdout";
   }
   if (vm.count("canport"))
     cout << "Reading can port: " << *can_port << "\n";
