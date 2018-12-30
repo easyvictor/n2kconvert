@@ -26,7 +26,6 @@
 #include "BoardSerialNumber.h"
 #include <iostream>
 #include <unistd.h>
-#include <syslog.h>
 #include "NMEA0183LinuxStream.h"
 #include "Options.h"
 
