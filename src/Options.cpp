@@ -37,7 +37,7 @@ bool SetOptions(int argc, char* argv[],
   po::notify(vm);
   if (vm.count("help")) {
     cout << options_all <<  "\n";
-    return false;
+    exit(0);
   }
   if (vm.count("config"))
     cout << "Using config file: " << *config_file << "\n";

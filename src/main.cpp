@@ -55,13 +55,14 @@ const unsigned long ReceiveMessages[] = {
 using namespace std;
 
 // *****************************************************************************
-void setup( tNMEA2000& NMEA2000,
+bool setup( tNMEA2000& NMEA2000,
             tNMEA0183LinuxStream& NMEA0183OutStream,
             tNMEA0183& NMEA0183,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
             tSocketStream& ForwardStream) {
-  // Setup NMEA2000 system
+  bool status = false;
 
+  // Setup NMEA2000 system
   char SnoStr[33];
   uint32_t SerialNumber=GetSerialNumber();
   snprintf(SnoStr,32,"%lu",(long unsigned int)SerialNumber);
@@ -82,16 +83,25 @@ void setup( tNMEA2000& NMEA2000,
   NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
   NMEA2000.SetMode(tNMEA2000::N2km_ListenAndNode,25);
   //NMEA2000.EnableForward(false);
-
   NMEA2000.ExtendTransmitMessages(TransmitMessages);
   NMEA2000.ExtendReceiveMessages(ReceiveMessages);
   NMEA2000.AttachMsgHandler(&N2kDataToNMEA0183);
-
-  NMEA2000.Open();
+  status = NMEA2000.Open();
+  if (!status) {
+    cerr << "Problem opening NMEA2000 port.\n";
+    return false;
+  }
 
   // Setup NMEA0183 ports and handlers
   NMEA0183.SetMessageStream(&NMEA0183OutStream);
-  NMEA0183.Open();
+  status = NMEA0183.Open();
+  if (!status) {
+    cerr << "Problem opening NMEA0183 port.\n";
+    return false;
+  }
+
+  // Setup was successful
+  return true;
 }
 
 // *****************************************************************************
@@ -106,13 +116,13 @@ int main(int argc, char* argv[]) {
   // Parse arguments from cmd line annd oad config file
   string config_file, can_port, out_stream;
   bool background_mode = false;
-  bool options_ok = false;
-  options_ok = SetOptions(argc, argv, // inputs
+  bool status_ok = false;
+  status_ok = SetOptions(argc, argv, // inputs
     &config_file, &can_port, &out_stream, &background_mode // outputs
   );
-  if (!options_ok) {
-    cerr << "Problem loading options, quitting.\n"
-    return 1;
+  if (!status_ok) {
+    cerr << "Problem loading options. Exiting.\n";
+    return 3;
   }
   // Create parsing objects
   tNMEA2000_SocketCAN NMEA2000((char*)can_port.c_str());
@@ -121,7 +131,11 @@ int main(int argc, char* argv[]) {
   tNMEA0183 NMEA0183;
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183);
   // Setup parsing objects
-  setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream);
+  status_ok = setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream);
+  if (!status_ok) {
+    cerr << "Problem during setup. Exiting.\n";
+    return 3;
+  }
   // Program loop
   std::cout << "Running!" << std::endl;
   while ( true ) {
