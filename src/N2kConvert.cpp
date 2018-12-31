@@ -46,7 +46,6 @@ SOFTWARE.
 #include <iostream>
 #include <csignal>
 #include <chrono>
-#include <thread>
 
 // Reading serial number depends of used board. BoardSerialNumber module
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
