@@ -87,14 +87,13 @@ bool Setup( tNMEA2000& NMEA2000,
   uint32_t SerialNumber = GetBoardSerialNumber();
   if (SerialNumber == 0) SerialNumber = DefaultSerialNumber;
   snprintf(SnoStr,32,"%lu",(long unsigned int)SerialNumber);
-
   NMEA2000.SetProductInformation(SnoStr, // Manufacturer's Model serial code
                                  120, // Manufacturer's product code
                                  "n2kconvert",  // Manufacturer's Model ID
                                  "1.0.0.1 (2018-04-03)",  // Manufacturer's Software version code
                                  "1.0.0.0 (2018-04-03)" // Manufacturer's Model version
                                  );
-  // Det device information
+  // Set device information
   NMEA2000.SetDeviceInformation(SerialNumber, // Unique number. Use e.g. Serial number.
                                 130, // Device function=PC Gateway. See codes on http://www.nmea.org/Assets/20120726%20nmea%202000%20class%20%26%20function%20codes%20v%202.00.pdf
                                 25, // Device class=Inter/Intranetwork Device. See codes on http://www.nmea.org/Assets/20120726%20nmea%202000%20class%20%26%20function%20codes%20v%202.00.pdf
