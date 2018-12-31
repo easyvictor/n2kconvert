@@ -34,10 +34,6 @@
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
 // 0 and then DefaultSerialNumber will be used.
 #define DefaultSerialNumber 999999
-uint32_t GetSerialNumber() {
-  uint32_t Sno=GetBoardSerialNumber();
-  return ( Sno!=0?Sno:DefaultSerialNumber );
-}
 
 // Set the information for other bus devices, which messages we support
 const unsigned long TransmitMessages[] = {0};
@@ -71,7 +67,8 @@ bool Setup( tNMEA2000& NMEA2000,
 
   // Setup NMEA2000 system
   char SnoStr[33];
-  uint32_t SerialNumber=GetSerialNumber();
+  uint32_t SerialNumber = GetBoardSerialNumber();
+  if (SerialNumber == 0) SerialNumber = DefaultSerialNumber;
   snprintf(SnoStr,32,"%lu",(long unsigned int)SerialNumber);
 
   NMEA2000.SetProductInformation(SnoStr, // Manufacturer's Model serial code
