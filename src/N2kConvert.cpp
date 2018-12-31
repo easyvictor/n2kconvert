@@ -46,6 +46,8 @@ SOFTWARE.
 #include <iostream>
 #include <unistd.h>
 #include <csignal>
+#include <chrono>
+#include <thread>
 
 // Reading serial number depends of used board. BoardSerialNumber module
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
@@ -90,8 +92,8 @@ bool Setup( tNMEA2000& NMEA2000,
   NMEA2000.SetProductInformation(SnoStr, // Manufacturer's Model serial code
                                  120, // Manufacturer's product code
                                  "n2kconvert",  // Manufacturer's Model ID
-                                 "1.0.0.1 (2018-04-03)",  // Manufacturer's Software version code
-                                 "1.0.0.0 (2018-04-03)" // Manufacturer's Model version
+                                 "1.0.0.1 (2018-12-30)",  // Manufacturer's Software version code
+                                 "1.0.0.0 (2018-12-30)" // Manufacturer's Model version
                                  );
   // Set device information
   NMEA2000.SetDeviceInformation(SerialNumber, // Unique number. Use e.g. Serial number.
@@ -132,10 +134,11 @@ bool Setup( tNMEA2000& NMEA2000,
 }
 
 // ******** WaitForEvent ********
-// This is preliminary definition. For RPi we need to build some
-// event system to minimize cpu usage.
+// This is preliminary definition. This triggers every 100ms.
+chrono::steady_clock::time_point time_point;
 void WaitForEvent() {
-  usleep(100);
+  time_point += chrono::milliseconds(100);
+  this_thread::sleep_until(time_point);
 }
 
 // ******** HandleSignal ********
@@ -187,6 +190,7 @@ int main(int argc, char* argv[]) {
   }
   // Program loop
   cout << "Running!\n";
+  time_point = chrono::steady_clock::now();
   while ( run_program ) {
     WaitForEvent();
     NMEA2000.ParseMessages();
