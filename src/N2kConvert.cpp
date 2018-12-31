@@ -130,10 +130,10 @@ bool Setup( tNMEA2000& NMEA2000,
 }
 
 // ******** WaitForEvent ********
-// This is preliminary definition. This triggers every 100ms.
+// This is preliminary definition. Polls periodically.
 auto sched_time = chrono::steady_clock::now();
 void WaitForEvent() {
-  sched_time += chrono::milliseconds(100);
+  sched_time += chrono::milliseconds(50);
   this_thread::sleep_until(sched_time);
 }
 
