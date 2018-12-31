@@ -44,7 +44,6 @@ SOFTWARE.
 #include "BoardSerialNumber.h"
 #include "Options.h"
 #include <iostream>
-#include <unistd.h>
 #include <csignal>
 #include <chrono>
 #include <thread>
