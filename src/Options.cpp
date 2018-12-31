@@ -15,7 +15,7 @@ bool SetOptions(int argc, char* argv[],
   string* config_file, string* can_port, string* out_stream, string* fwd_stream,
   bool* debug_mode) {
   *debug_mode = false;
-  // Declare the supported options.
+  // Supported command line or config file options.
   po::options_description options_generic("Config or command line options");
   options_generic.add_options()
     ("canport,c", po::value<string>(can_port)->default_value(default_can_port),
@@ -25,6 +25,7 @@ bool SetOptions(int argc, char* argv[],
     ("forward", po::value<string>(fwd_stream),
       "output file/FIFO to forward NMEA2000 data")
   ;
+  // Supported command line only options
   po::options_description options_cmdline_only("Command line only options");
   options_cmdline_only.add_options()
     ("help", "produce help message")
@@ -32,30 +33,41 @@ bool SetOptions(int argc, char* argv[],
       "configuration file name.")
     ("debug,d", "debug mode (send all data to stdout)")
   ;
+  // Create list of all options for help
   po::options_description options_all("All options");
   options_all.add(options_generic).add(options_cmdline_only);
 
+  // Parse command line vars
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, options_all), vm);
   po::notify(vm);
+
+  // Display help
   if (vm.count("help")) {
     cout << options_all <<  "\n";
     exit(0);
   }
+
+  // Open config file
   if (vm.count("config"))
     cout << "Using config file: " << *config_file << "\n";
   ifstream config_fstream(config_file->c_str(), ifstream::in);
   if (!config_fstream) {
     cerr << "Cannot open config file: " << *config_file << "\n";
   } else {
+    // Parse config file
     po::store(po::parse_config_file(config_fstream, options_generic), vm);
     po::notify(vm);
   }
+
+  // Handle debug mode
   if (vm.count("debug")) {
     cout << "Debug mode enabled!\n";
     *debug_mode = true;
     *out_stream = *fwd_stream = debug_stream;
   }
+  
+  // Display selected ports and streams
   if (vm.count("canport"))
     cout << "Reading from can port: " << *can_port << "\n";
   if (vm.count("output"))
