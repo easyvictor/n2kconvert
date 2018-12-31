@@ -59,8 +59,10 @@ bool run_program = true;
 // For cout and cerr
 using namespace std;
 
-// *****************************************************************************
-bool setup( tNMEA2000& NMEA2000,
+// ******** Setup ********
+// Configures the input and output streams,
+// and data conversion.
+bool Setup( tNMEA2000& NMEA2000,
             tNMEA0183LinuxStream& NMEA0183OutStream,
             tNMEA0183& NMEA0183,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
@@ -116,19 +118,21 @@ bool setup( tNMEA2000& NMEA2000,
   return true;
 }
 
-// *****************************************************************************
+// ******** WaitForEvent ********
 // This is preliminary definition. For RPi we need to build some
 // event system to minimize cpu usage.
 void WaitForEvent() {
   usleep(100);
 }
 
+// ******** HandleSignal ********
 // Signal called when kill signal received
 void HandleSignal(int signal) {
   cout << "Received signal " << signal << ".\n";
   run_program = false;
 }
 
+// ******** Cleanup ********
 // To be called before program exit, to clear allocated memory
 void Cleanup(tSocketStream* fwd_stream_ptr) {
   if (fwd_stream_ptr) {
@@ -136,7 +140,7 @@ void Cleanup(tSocketStream* fwd_stream_ptr) {
   }
 }
 
-// *****************************************************************************
+// ******** Main Program ********
 int main(int argc, char* argv[]) {
   // Setup signal handler
   signal(SIGINT, HandleSignal);
@@ -162,11 +166,11 @@ int main(int argc, char* argv[]) {
     fwd_stream_ptr = new tSocketStream(fwd_stream.c_str());
   }
   // Setup parsing objects
-  status_ok = setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, fwd_stream_ptr);
+  status_ok = Setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, fwd_stream_ptr);
   if (!status_ok) {
-    cerr << "Problem during setup. Exiting.\n";
-    //Cleanup(fwd_stream_ptr);
-    //return 3;
+    cerr << "Problem during Setup. Exiting.\n";
+    Cleanup(fwd_stream_ptr);
+    return 3;
   }
   // Program loop
   cout << "Running!\n";
