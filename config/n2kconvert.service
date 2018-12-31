@@ -1,0 +1,16 @@
+[Unit]
+Description=NMEA2000 to NMEA0183 Converter
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/n2kconvert
+WorkingDirectory=/home/pi/n2kconvert
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+RestartSec=1
+User=pi
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
