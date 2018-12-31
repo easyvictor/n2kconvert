@@ -193,12 +193,16 @@ int main(int argc, char* argv[]) {
   // Program loop
   cout << "Running!\n";
   while (run_program) {
+    // Wait until trigger to parse/send
     WaitForEvent();
+    // Debug timing
     if (debug_mode) {
       start_parse_time = chrono::steady_clock::now();
     }
+    // Parse NMEA2000 and send NMEA0183
     NMEA2000.ParseMessages();
     N2kDataToNMEA0183.Update();
+    // Debug timing and prints
     if (debug_mode) {
       auto time_now = chrono::steady_clock::now();
       auto parse_time = chrono::duration_cast<chrono::milliseconds>(time_now - start_parse_time).count();
