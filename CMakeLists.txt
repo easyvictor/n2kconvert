@@ -35,7 +35,7 @@ file(GLOB MAIN_SRC
     "src/BoardSerialNumber.cpp"
     "src/N2kDataToNMEA0183.cpp"
     "src/Options.cpp"
-    "src/main.cpp"
+    "src/N2kConvert.cpp"
 )
 
 find_package( Boost 1.65.1 COMPONENTS program_options REQUIRED )
