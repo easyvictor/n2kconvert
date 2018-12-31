@@ -16,14 +16,14 @@ bool SetOptions(int argc, char* argv[],
   bool* debug_mode) {
   *debug_mode = false;
   // Declare the supported options.
-  po::options_description options_generic("Config or cmd line options");
+  po::options_description options_generic("Config or command line options");
   options_generic.add_options()
     ("canport,c", po::value<string>(can_port)->default_value(default_can_port),
-      "can port to read.")
+      "CAN port to read")
     ("output,o", po::value<string>(out_stream)->default_value(default_out_stream),
-      "output stream to send data.")
+      "output file/FIFO to send NMEA0183 sentences")
     ("forward", po::value<string>(fwd_stream),
-      "forward NMEA2000 data to this stream.")
+      "output file/FIFO to forward NMEA2000 data")
   ;
   po::options_description options_cmdline_only("Command line only options");
   options_cmdline_only.add_options()
