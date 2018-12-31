@@ -39,13 +39,14 @@
 const unsigned long TransmitMessages[] = {0};
 const unsigned long ReceiveMessages[] = {
   //126992L, // System time
-  127250L, // Heading
-  127258L, // Magnetic Variation
-  128259UL, // Boat Speed
-  128267UL, // Depth
-  129025UL, // Lat/Lon rapid
-  129026L, // COG SOG rapid
-  129029L, // GNSS Data
+  127250, // Heading
+  127258, // Magnetic Variation
+  128259, // Boat Speed
+  128267, // Depth
+  129025, // Lat/Lon rapid
+  129026, // COG SOG rapid
+  129029, // GNSS Data
+  130306, // Wind
   0
 };
 
