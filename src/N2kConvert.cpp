@@ -129,14 +129,6 @@ bool Setup( tNMEA2000& NMEA2000,
   return true;
 }
 
-// ******** WaitForEvent ********
-// This is preliminary definition. Polls periodically.
-auto sched_time = chrono::steady_clock::now();
-void WaitForEvent() {
-  sched_time += chrono::milliseconds(50);
-  this_thread::sleep_until(sched_time);
-}
-
 // ******** HandleSignal ********
 // Signal called when kill signal received
 void HandleSignal(int signal) {
@@ -184,34 +176,21 @@ int main(int argc, char* argv[]) {
     Cleanup(fwd_stream_ptr);
     return 3;
   }
-  // Set current time for measurements
-  sched_time = chrono::steady_clock::now();
   // Debug time vars
-  auto debug_time = sched_time;
-  auto start_parse_time = sched_time;
+  auto debug_time = chrono::steady_clock::now();
   
   // **** Main Program Loop ****
   cout << "Running!\n";
   while (run_program) {
-    // Wait until trigger to parse/send
-    WaitForEvent();
-    // Debug timing
-    if (debug_mode) {
-      start_parse_time = chrono::steady_clock::now();
-    }
     // Parse NMEA2000 and send NMEA0183
+    // Note: requires message parsing to block on new data
     NMEA2000.ParseMessages();
     N2kDataToNMEA0183.Update();
     // Debug timing and prints
     if (debug_mode) {
       auto time_now = chrono::steady_clock::now();
-      auto parse_time = chrono::duration_cast<chrono::milliseconds>(time_now - start_parse_time).count();
       auto loop_time = chrono::duration_cast<chrono::milliseconds>(time_now - debug_time).count();
-      float usage = float(parse_time)/float(loop_time)*100.0f;
-      cout << "Parsed messages. "
-        << "Parse: " << parse_time << "ms; "
-        << "Loop: " << loop_time << "ms; "
-        << "Usage: " << usage << "%\n";
+      cout << "Parsed messages. Loop time: " << loop_time << "ms\n";
       debug_time = time_now;
     }
   }
