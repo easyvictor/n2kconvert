@@ -125,7 +125,7 @@ void WaitForEvent() {
 
 // Signal called when kill signal received
 void HandleSignal(int signal) {
-  cout << "Kill signal received. Exiting.\n";
+  cout << "Received signal " << signal << ".\n";
   run_program = false;
 }
 
@@ -169,12 +169,13 @@ int main(int argc, char* argv[]) {
     //return 3;
   }
   // Program loop
-  std::cout << "Running!" << std::endl;
+  cout << "Running!\n";
   while ( run_program ) {
     WaitForEvent();
     NMEA2000.ParseMessages();
     N2kDataToNMEA0183.Update();
   }
+  cout << "Exiting.\n";
   Cleanup(fwd_stream_ptr);
   return 0;
 }
