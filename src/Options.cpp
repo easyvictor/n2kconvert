@@ -44,6 +44,7 @@ bool SetOptions(int argc, char* argv[],
 
   // Display help
   if (vm.count("help")) {
+    cout << "n2kconvert - a daemon for converting NMEA2000 CAN data to NMEA0183 sentences.\n";
     cout << options_all <<  "\n";
     exit(0);
   }
