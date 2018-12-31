@@ -22,13 +22,13 @@
 */
 
 #include <NMEA2000_SocketCAN.h>
+#include <NMEA0183LinuxStream.h>
 #include "N2kDataToNMEA0183.h"
 #include "BoardSerialNumber.h"
+#include "Options.h"
 #include <iostream>
 #include <unistd.h>
 #include <csignal>
-#include "NMEA0183LinuxStream.h"
-#include "Options.h"
 
 // Reading serial number depends of used board. BoardSerialNumber module
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
