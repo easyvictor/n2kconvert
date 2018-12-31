@@ -26,6 +26,7 @@
 #include "BoardSerialNumber.h"
 #include <iostream>
 #include <unistd.h>
+#include <csignal>
 #include "NMEA0183LinuxStream.h"
 #include "Options.h"
 
@@ -52,6 +53,9 @@ const unsigned long ReceiveMessages[] = {
   0
 };
 
+// Flag for stopping program
+bool run_program = true;
+
 // For cout and cerr
 using namespace std;
 
@@ -60,8 +64,7 @@ bool setup( tNMEA2000& NMEA2000,
             tNMEA0183LinuxStream& NMEA0183OutStream,
             tNMEA0183& NMEA0183,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
-            tSocketStream& ForwardStream, 
-            bool enable_fwd_stream) {
+            tSocketStream* ForwardStream) {
   bool status = false;
 
   // Setup NMEA2000 system
@@ -82,9 +85,13 @@ bool setup( tNMEA2000& NMEA2000,
                                 2046 // Just choosen free from code list on http://www.nmea.org/Assets/20121020%20nmea%202000%20registration%20list.pdf
                                );
   // Forward settings
-  NMEA2000.SetForwardStream(&ForwardStream);
-  NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
-  NMEA2000.EnableForward(enable_fwd_stream);
+  if (ForwardStream) {
+    NMEA2000.SetForwardStream(ForwardStream);
+    NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
+    NMEA2000.EnableForward(true);
+  } else {
+    NMEA2000.EnableForward(false);
+  }
   // Mode
   NMEA2000.SetMode(tNMEA2000::N2km_ListenAndNode,25);
   // Message settings
@@ -116,14 +123,30 @@ void WaitForEvent() {
   usleep(100);
 }
 
+// Signal called when kill signal received
+void HandleSignal(int signal) {
+  cout << "Kill signal received. Exiting.\n";
+  run_program = false;
+}
+
+// To be called before program exit, to clear allocated memory
+void Cleanup(tSocketStream* fwd_stream_ptr) {
+  if (fwd_stream_ptr) {
+    delete(fwd_stream_ptr);
+  }
+}
+
 // *****************************************************************************
 int main(int argc, char* argv[]) {
+  // Setup signal handler
+  signal(SIGINT, HandleSignal);
+  signal(SIGTERM, HandleSignal);
   // Parse arguments from cmd line annd oad config file
-  string config_file, can_port, out_stream;
+  string config_file, can_port, out_stream, fwd_stream;
   bool debug_mode = false;
   bool status_ok = false;
   status_ok = SetOptions(argc, argv, // inputs
-    &config_file, &can_port, &out_stream, &debug_mode); // outputs
+    &config_file, &can_port, &out_stream, &fwd_stream, &debug_mode); // outputs
   if (!status_ok) {
     cerr << "Problem loading options. Exiting.\n";
     return 3;
@@ -131,21 +154,27 @@ int main(int argc, char* argv[]) {
   // Create parsing objects
   tNMEA2000_SocketCAN NMEA2000((char*)can_port.c_str());
   tNMEA0183LinuxStream NMEA0183OutStream(out_stream.c_str());
-  tSocketStream ForwardStream;
   tNMEA0183 NMEA0183;
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183);
+  // Optional forward stream
+  tSocketStream *fwd_stream_ptr = NULL;
+  if (!fwd_stream.empty()) {
+    fwd_stream_ptr = new tSocketStream(fwd_stream.c_str());
+  }
   // Setup parsing objects
-  status_ok = setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, ForwardStream, debug_mode);
+  status_ok = setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, fwd_stream_ptr);
   if (!status_ok) {
     cerr << "Problem during setup. Exiting.\n";
-    return 3;
+    //Cleanup(fwd_stream_ptr);
+    //return 3;
   }
   // Program loop
   std::cout << "Running!" << std::endl;
-  while ( true ) {
+  while ( run_program ) {
     WaitForEvent();
     NMEA2000.ParseMessages();
     N2kDataToNMEA0183.Update();
   }
+  Cleanup(fwd_stream_ptr);
   return 0;
 }

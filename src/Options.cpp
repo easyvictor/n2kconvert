@@ -9,9 +9,10 @@ using namespace std;
 const string default_config_file = "/etc/n2kconvert.conf";
 const string default_can_port = "can0";
 const string default_out_stream = "/dev/stdout";
+const string debug_stream = "/dev/stdout";
 
 bool SetOptions(int argc, char* argv[],
-  string* config_file, string* can_port, string* out_stream,
+  string* config_file, string* can_port, string* out_stream, string* fwd_stream,
   bool* debug_mode) {
   *debug_mode = false;
   // Declare the supported options.
@@ -21,6 +22,8 @@ bool SetOptions(int argc, char* argv[],
       "can port to read.")
     ("output,o", po::value<string>(out_stream)->default_value(default_out_stream),
       "output stream to send data.")
+    ("forward", po::value<string>(fwd_stream),
+      "forward NMEA2000 data to this stream.")
   ;
   po::options_description options_cmdline_only("Command line only options");
   options_cmdline_only.add_options()
@@ -51,12 +54,14 @@ bool SetOptions(int argc, char* argv[],
   if (vm.count("debug")) {
     cout << "Debug mode enabled!\n";
     *debug_mode = true;
-    *out_stream = "/dev/stdout";
+    *out_stream = *fwd_stream = debug_stream;
   }
   if (vm.count("canport"))
-    cout << "Reading can port: " << *can_port << "\n";
+    cout << "Reading from can port: " << *can_port << "\n";
   if (vm.count("output"))
-    cout << "Writing data to: " << *out_stream << "\n";
+    cout << "Writing NMEA0183 data to: " << *out_stream << "\n";
+  if (!fwd_stream->empty())
+    cout << "Forwarding NMEA2000 data to: " << *fwd_stream << "\n";
 
   return true;
 }
