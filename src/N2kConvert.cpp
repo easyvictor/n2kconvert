@@ -190,7 +190,8 @@ int main(int argc, char* argv[]) {
   // Debug time vars
   auto debug_time = sched_time;
   auto start_parse_time = sched_time;
-  // Program loop
+  
+  // **** Main Program Loop ****
   cout << "Running!\n";
   while (run_program) {
     // Wait until trigger to parse/send
