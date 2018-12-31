@@ -52,11 +52,11 @@ SOFTWARE.
 // Reading serial number depends of used board. BoardSerialNumber module
 // has methods for RPi, Arduino DUE and Teensy. For others function returns
 // 0 and then DefaultSerialNumber will be used.
-const uint32_t DefaultSerialNumber = 999999;
+static const uint32_t DefaultSerialNumber = 999999;
 
 // Set the information for other bus devices, which messages we support
-const unsigned long TransmitMessages[] = {0};
-const unsigned long ReceiveMessages[] = {
+static const unsigned long TransmitMessages[] = {0};
+static const unsigned long ReceiveMessages[] = {
   127250, // Heading
   127258, // Magnetic Variation
   128259, // Boat Speed
@@ -69,7 +69,7 @@ const unsigned long ReceiveMessages[] = {
 };
 
 // Flag for stopping program
-bool run_program = true;
+static bool run_program = true;
 
 // For cout and cerr
 using namespace std;
@@ -83,7 +83,6 @@ bool Setup( tNMEA2000& NMEA2000,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
             tSocketStream* ForwardStream) {
   bool status = false;
-
   // Setup NMEA2000 system
   char SnoStr[33];
   uint32_t SerialNumber = GetBoardSerialNumber();
@@ -120,7 +119,6 @@ bool Setup( tNMEA2000& NMEA2000,
     cerr << "Problem opening NMEA2000 port.\n";
     return false;
   }
-
   // Setup NMEA0183 ports and handlers
   NMEA0183.SetMessageStream(&NMEA0183OutStream);
   status = NMEA0183.Open();
@@ -128,17 +126,16 @@ bool Setup( tNMEA2000& NMEA2000,
     cerr << "Problem opening NMEA0183 port.\n";
     return false;
   }
-
   // Setup was successful
   return true;
 }
 
 // ******** WaitForEvent ********
 // This is preliminary definition. This triggers every 100ms.
-chrono::steady_clock::time_point time_point;
+auto sched_time = chrono::steady_clock::now();
 void WaitForEvent() {
-  time_point += chrono::milliseconds(100);
-  this_thread::sleep_until(time_point);
+  sched_time += chrono::milliseconds(100);
+  this_thread::sleep_until(sched_time);
 }
 
 // ******** HandleSignal ********
@@ -188,13 +185,31 @@ int main(int argc, char* argv[]) {
     Cleanup(fwd_stream_ptr);
     return 3;
   }
+  // Set current time for measurements
+  sched_time = chrono::steady_clock::now();
+  // Debug time vars
+  auto debug_time = sched_time;
+  auto start_parse_time = sched_time;
   // Program loop
   cout << "Running!\n";
-  time_point = chrono::steady_clock::now();
-  while ( run_program ) {
+  while (run_program) {
     WaitForEvent();
+    if (debug_mode) {
+      start_parse_time = chrono::steady_clock::now();
+    }
     NMEA2000.ParseMessages();
     N2kDataToNMEA0183.Update();
+    if (debug_mode) {
+      auto time_now = chrono::steady_clock::now();
+      auto parse_time = chrono::duration_cast<chrono::milliseconds>(time_now - start_parse_time).count();
+      auto loop_time = chrono::duration_cast<chrono::milliseconds>(time_now - debug_time).count();
+      float usage = float(parse_time)/float(loop_time)*100.0f;
+      cout << "Parsed messages. "
+        << "Parse: " << parse_time << "ms; "
+        << "Loop: " << loop_time << "ms; "
+        << "Usage: " << usage << "%\n";
+      debug_time = time_now;
+    }
   }
   cout << "Exiting.\n";
   Cleanup(fwd_stream_ptr);
