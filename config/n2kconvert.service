@@ -1,15 +1,13 @@
 [Unit]
-Description=NMEA2000 to NMEA0183 Converter
-After=network.target
+Description=n2kconvert NMEA2000 to NMEA0183 Converter
+After=network.target n2kconvert-fifos.service
 
 [Service]
 ExecStart=/usr/bin/n2kconvert
-WorkingDirectory=/home/pi/n2kconvert
-StandardOutput=inherit
+StandardOutput=syslog
 StandardError=inherit
 Restart=always
 RestartSec=1
-User=pi
 Type=simple
 
 [Install]
