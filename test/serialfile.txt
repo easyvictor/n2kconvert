@@ -1,3 +1,0 @@
-my line 1
-my line 2
-my line again 3
