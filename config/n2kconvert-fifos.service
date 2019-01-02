@@ -1,0 +1,14 @@
+[Unit]
+Description=Create FIFOs for use by n2kconvert
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/n2kconvert-fifos.sh
+StandardOutput=syslog
+StandardError=inherit
+Restart=always
+RestartSec=1
+Type=notify
+
+[Install]
+WantedBy=multi-user.target
