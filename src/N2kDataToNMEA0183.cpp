@@ -122,8 +122,11 @@ double Range;
 
 //*****************************************************************************
 void tN2kDataToNMEA0183::HandlePosition(const tN2kMsg &N2kMsg) {
-
+  tNMEA0183Msg NMEA0183Msg;
   if ( ParseN2kPGN129025(N2kMsg, Latitude, Longitude) ) {
+    if ( NMEA0183SetGLL(NMEA0183Msg, SecondsSinceMidnight, Latitude, Longitude, 0) ) {
+      SendMessage(NMEA0183Msg);
+    }
     LastPositionTime=millis();
   }
 }
