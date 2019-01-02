@@ -1,0 +1,14 @@
+[Unit]
+Description=kplex NMEA0183 multiplexer
+After=network.target n2kconvert.service
+
+[Service]
+ExecStart=/usr/bin/kplex -f /etc/kplex.conf -p /var/run/kplex.pid -o mode=background
+StandardOutput=syslog
+StandardError=inherit
+Restart=always
+RestartSec=1
+Type=forking
+
+[Install]
+WantedBy=multi-user.target
