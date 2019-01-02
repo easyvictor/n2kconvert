@@ -1,5 +1,5 @@
 [Unit]
-Description=Create FIFOs for use by n2kconvert
+Description=n2kconvert-fifos Create FIFOs for use by n2kconvert
 After=network.target
 
 [Service]
