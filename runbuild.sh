@@ -37,5 +37,8 @@ pushd "$BUILD_FOLDER"
 cmake "$TOP_DIR" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DCMAKE_INSTALL_PREFIX="$TOP_DIR"
 if [ $? -eq 0 ]; then
     make
+    if [ $? -eq 0 ]; then
+    	make package
+    fi
 fi
 popd

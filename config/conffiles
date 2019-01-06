@@ -1,0 +1,3 @@
+/etc/n2kconvert.conf
+/etc/systemd/system/n2kconvert.service
+/etc/systemd/system/n2kconvert-fifos.service
