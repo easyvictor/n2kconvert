@@ -1,9 +1,9 @@
 #!/bin/bash
-chmod 644 /etc/n2kconvert.conf
-chmod 644 /etc/systemd/system/n2kconvert.service
-chmod 644 /etc/systemd/system/n2kconvert-fifos.service
-chmod 755 /usr/bin/n2kconvert
-chmod 755 /usr/bin/n2kconvert-fifos.sh
+#chmod 644 /etc/n2kconvert.conf
+#chmod 644 /etc/systemd/system/n2kconvert.service
+#chmod 644 /etc/systemd/system/n2kconvert-fifos.service
+#chmod 755 /usr/bin/n2kconvert
+#chmod 755 /usr/bin/n2kconvert-fifos.sh
 systemctl daemon-reload
 systemctl enable n2kconvert.service
 systemctl enable n2kconvert-fifos.service
