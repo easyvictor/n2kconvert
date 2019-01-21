@@ -12,7 +12,7 @@ other NMEA0183 streams.
 To use this example you need install also:
 
 - NMEA2000 library
-- NMEA_sfocketCAN library
+- NMEA_socketCAN library
 - NMEA0183 library
 
 
@@ -102,7 +102,7 @@ bool Setup( tNMEA2000& NMEA2000,
   // Forward settings
   if (ForwardStream) {
     NMEA2000.SetForwardStream(ForwardStream);
-    NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
+    //NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
     NMEA2000.EnableForward(true);
   } else {
     NMEA2000.EnableForward(false);

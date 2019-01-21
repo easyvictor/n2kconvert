@@ -11,5 +11,5 @@ other NMEA0183 streams.
 To use this example you need install also:
 
 - NMEA2000 library
-- NMEA_sfocketCAN library
+- NMEA_socketCAN library
 - NMEA0183 library
