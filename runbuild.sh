@@ -36,7 +36,7 @@ fi
 pushd "$BUILD_FOLDER"
 cmake "$TOP_DIR" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN" -DCMAKE_INSTALL_PREFIX="$TOP_DIR"
 if [ $? -eq 0 ]; then
-    make package
+    make -j4 package
     if [ $? -eq 0 ] && [ "$BUILD_ARCH" = "pi" ]; then
     	echo "Attempting to upload to pi:"
     	scp *.deb pi: || echo "Could not upload to RPi."
