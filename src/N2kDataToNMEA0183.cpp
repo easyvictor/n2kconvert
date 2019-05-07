@@ -114,7 +114,7 @@ double Range;
       if ( NMEA0183SetDPT(NMEA0183Msg,DepthBelowTransducer,Offset) ) {
         SendMessage(NMEA0183Msg);
       }
-      if ( NMEA0183SetDBx(NMEA0183Msg,DepthBelowTransducer,Offset) ) {
+      if ( NMEA0183SetDBT(NMEA0183Msg,DepthBelowTransducer) ) {
         SendMessage(NMEA0183Msg);
       }
   }
