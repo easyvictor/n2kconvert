@@ -61,6 +61,7 @@ protected:
   void HandleCOGSOG(const tN2kMsg &N2kMsg); // 129026
   void HandleGNSS(const tN2kMsg &N2kMsg); // 129029
   void HandleWind(const tN2kMsg &N2kMsg); // 130306
+  void HandleEnvParams(const tN2kMsg &N2kMsg); // 130311
   void SetNextRMCSend() { NextRMCSend=millis()+RMCPeriod; }
   void SendRMC();
   void SendMessage(const tNMEA0183Msg &NMEA0183Msg);

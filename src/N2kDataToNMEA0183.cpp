@@ -40,6 +40,7 @@ void tN2kDataToNMEA0183::HandleMsg(const tN2kMsg &N2kMsg) {
     case 129026UL: HandleCOGSOG(N2kMsg);
     case 129029UL: HandleGNSS(N2kMsg);
     case 130306UL: HandleWind(N2kMsg);
+    case 130311UL: HandleEnvParams(N2kMsg);
   }
 }
 
@@ -184,6 +185,27 @@ tNMEA0183WindReference NMEA0183Reference=NMEA0183Wind_True;
 
     if ( NMEA0183SetMWV(NMEA0183Msg, WindAngle*radToDeg, NMEA0183Reference , WindSpeed) ) {
       SendMessage(NMEA0183Msg);
+    }
+  }
+}
+
+void tN2kDataToNMEA0183::HandleEnvParams(const tN2kMsg &N2kMsg) {
+  unsigned char SID;
+  tN2kTempSource TempSource;
+  double Temperature;
+  tN2kHumiditySource HumiditySource;
+  double Humidity;
+  double AtmosphericPressure;
+  if ( ParseN2kEnvironmentalParameters(N2kMsg, SID, TempSource, Temperature,
+                                      HumiditySource, Humidity, AtmosphericPressure) ) {
+    // Check for sea temp data
+    if ( TempSource == N2kts_SeaTemperature ) {
+      tNMEA0183Msg NMEA0183Msg;
+      // Send water temperature
+      // From N2k, comes in K. Convert to C.
+      if ( NMEA0183SetMTW(NMEA0183Msg, KelvinToC(Temperature)) ) {
+        SendMessage(NMEA0183Msg);
+      }
     }
   }
 }
