@@ -26,12 +26,13 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <NMEA0183Messages.h>
 #include <math.h>
 
-
 const double radToDeg=180.0/M_PI;
 
 //*****************************************************************************
+// Handle incoming NMEA2000 messages
 void tN2kDataToNMEA0183::HandleMsg(const tN2kMsg &N2kMsg) {
   switch (N2kMsg.PGN) {
+    case 129033UL: HandleDateTime(N2kMsg);
     case 127250UL: HandleHeading(N2kMsg);
     case 127258UL: HandleVariation(N2kMsg);
     case 128259UL: HandleBoatSpeed(N2kMsg);
@@ -45,46 +46,172 @@ void tN2kDataToNMEA0183::HandleMsg(const tN2kMsg &N2kMsg) {
 }
 
 //*****************************************************************************
+// Handle incoming NMEA0183 messages on the aux input port
+void tN2kDataToNMEA0183::HandleMsg(const tNMEA0183Msg &NMEA0183Msg) {
+  // Call all handlers here by checking message code
+  if (NMEA0183Msg.IsMessageCode("HDG")) {
+    HandleHeadingNMEA0183(NMEA0183Msg);
+  }
+}
+
+//*****************************************************************************
 void tN2kDataToNMEA0183::Update() {
   SendRMC();
-  if ( LastHeadingTime+2000<millis() ) Heading=N2kDoubleNA;
-  if ( LastCOGSOGTime+2000<millis() ) { COG=N2kDoubleNA; SOG=N2kDoubleNA; }
-  if ( LastPositionTime+4000<millis() ) { Latitude=N2kDoubleNA; Longitude=N2kDoubleNA; }
-  if ( LastWindTime+2000<millis() ) { WindSpeed=N2kDoubleNA; WindAngle=N2kDoubleNA; }
+  if (LastHeadingMagSensorTime+2000 < millis()) { 
+    HeadingMagSensor = N2kDoubleNA;
+    UpdateHeadingsNewMagnetic(); // Update dependent variables accordingly
+  }
+  if (LastHeadingTrueSensorTime+2000 < millis()) { 
+    HeadingTrueSensor = N2kDoubleNA; 
+    UpdateHeadingsNewTrue(); // Update dependent variables accordingly
+  }
+  if (LastCOGSOGTime+2000<millis()) { COG=N2kDoubleNA; SOG=N2kDoubleNA; }
+  if (LastPositionTime+4000<millis()) { Latitude=N2kDoubleNA; Longitude=N2kDoubleNA; }
+  if (LastWindTime+2000<millis()) { WindSpeed=N2kDoubleNA; WindAngle=N2kDoubleNA; }
 }
 
 //*****************************************************************************
 void tN2kDataToNMEA0183::SendMessage(const tNMEA0183Msg &NMEA0183Msg) {
-  if ( pNMEA0183!=0 ) pNMEA0183->SendMessage(NMEA0183Msg);
+  if ( pNMEA0183Out!=0 ) pNMEA0183Out->SendMessage(NMEA0183Msg);
   if ( SendNMEA0183MessageCallback!=0 ) SendNMEA0183MessageCallback(NMEA0183Msg);
+}
+
+//*****************************************************************************
+void tN2kDataToNMEA0183::HandleDateTime(const tN2kMsg &N2kMsg) {
 }
 
 //*****************************************************************************
 void tN2kDataToNMEA0183::HandleHeading(const tN2kMsg &N2kMsg) {
 unsigned char SID;
 tN2kHeadingReference ref;
-double _Deviation=0;
-double _Variation;
-tNMEA0183Msg NMEA0183Msg;
+double _Deviation, _Variation, _Heading;
 
-  if ( ParseN2kHeading(N2kMsg, SID, Heading, _Deviation, _Variation, ref) ) {
-    if ( ref==N2khr_magnetic ) {
-      if ( !N2kIsNA(_Variation) ) Variation=_Variation; // Update Variation
-      if ( !N2kIsNA(Heading) && !N2kIsNA(Variation) ) Heading-=Variation;
+  if (ParseN2kHeading(N2kMsg, SID, _Heading, _Deviation, _Variation, ref)) {
+    if (ref == N2khr_magnetic) {
+      if (!N2kIsNA(_Heading)) HeadingMagSensor = _Heading; // Update magnetic sensor heading
+      if (!N2kIsNA(_Variation)) Variation = _Variation; // Update Variation
+      if (!N2kIsNA(_Deviation)) Deviation = _Deviation; // Update Deviation
+      UpdateHeadingsNewMagnetic();
+      // Send HDG message
+      tNMEA0183Msg NMEA0183MsgHDG;
+      if (NMEA0183SetHDG(NMEA0183MsgHDG, HeadingMagSensor, Deviation, Variation)) {
+        SendMessage(NMEA0183MsgHDG);
+      }
+      // Send HDT as well if we have the right data
+      if (!N2kIsNA(HeadingTrue)) {
+        tNMEA0183Msg NMEA0183MsgHDT;
+        if (NMEA0183SetHDT(NMEA0183MsgHDT, HeadingTrue)) {
+          SendMessage(NMEA0183MsgHDT);
+        }
+      }
+    } else if (ref == N2khr_true) {
+      if (!N2kIsNA(_Heading)) HeadingTrueSensor = _Heading; // Update true heading
+      UpdateHeadingsNewTrue();
+      // Send HDT message
+      tNMEA0183Msg NMEA0183MsgHDT;
+      if (NMEA0183SetHDT(NMEA0183MsgHDT, HeadingTrue)) {
+        SendMessage(NMEA0183MsgHDT);
+      }
     }
-    LastHeadingTime=millis();
-    if ( NMEA0183SetHDG(NMEA0183Msg,Heading,_Deviation,Variation) ) {
-      SendMessage(NMEA0183Msg);
+  }
+}
+
+//*****************************************************************************
+// Handle incoming HDG
+void tN2kDataToNMEA0183::HandleHeadingNMEA0183(const tNMEA0183Msg &NMEA0183Msg) {
+  double _Heading, _Deviation, _Variation;
+  if (NMEA0183ParseHDG_nc(NMEA0183Msg, _Heading, _Deviation, _Variation)) {
+    if (!NMEA0183IsNA(_Heading)) HeadingMagSensor=_Heading; // Update magnetic sensor heading
+    if (!NMEA0183IsNA(_Variation)) Variation=_Variation; // Update Variation
+    if (!NMEA0183IsNA(_Deviation)) Deviation=_Deviation; // Update Deviation
+    UpdateHeadingsNewMagnetic();
+    // Send HDG message
+    tNMEA0183Msg NMEA0183MsgHDG;
+    if (NMEA0183SetHDG(NMEA0183MsgHDG, HeadingMagSensor, Deviation, Variation)) {
+      SendMessage(NMEA0183MsgHDG);
+    }
+    // Send HDT as well if we have the right data
+    if (!N2kIsNA(HeadingTrue)) {
+      tNMEA0183Msg NMEA0183MsgHDT;
+      if (NMEA0183SetHDT(NMEA0183MsgHDT, HeadingTrue)) {
+        SendMessage(NMEA0183MsgHDT);
+      }
+    }
+  }
+}
+
+void tN2kDataToNMEA0183::UpdateHeadingsNewMagnetic() {
+  // This function is called with the magnetic sensor heading is updated and
+  // it is the *controlling* source, so the others are calculated from it.
+  // Updates include timeout expirations (see 2 sec timeout above)
+  if (!N2kIsNA(HeadingMagSensor) && !NMEA0183IsNA(HeadingMagSensor)) {
+    // We have a valid Mag reading. Good.
+    // Start with our magnetic sensor reading, assuming no deviation
+    HeadingMagnetic = HeadingMagSensor;
+    // If we have deviation, add it to the sensor reading to correct it
+    if (!N2kIsNA(Deviation) && !NMEA0183IsNA(Deviation)) {
+      HeadingMagnetic = WrapAngle(HeadingMagnetic + Deviation);
+    }
+    // If we have variation, add it to the mag heading to get true
+    if (!N2kIsNA(Variation) && !NMEA0183IsNA(Variation)) { 
+      HeadingTrue = WrapAngle(HeadingMagnetic + Variation);
+    }
+    LastHeadingMagSensorTime = millis();
+  } else {
+    // Must have an expired mag sensor reading. This creates a few problems.
+    // 1) HeadingMagnetic can be retrieved from the mag sensor, or true sensor minus variation.
+    //    So if true or variation are also gone, we have no HeadingMagnetic
+    // 2) HeadingTrue can be retrieved from the true sensor, or mag sensor plus variation.
+    //    So if true sensor is also gone, we have no HeadingTrue
+    if (N2kIsNA(HeadingTrueSensor) || NMEA0183IsNA(HeadingTrueSensor)) {
+      // Case 2)
+      HeadingTrue = N2kDoubleNA;
+    } else if (N2kIsNA(Variation) || NMEA0183IsNA(Variation)) {
+      // Case 1)
+      HeadingMagnetic = N2kDoubleNA;
+    }
+  }
+}
+
+void tN2kDataToNMEA0183::UpdateHeadingsNewTrue() {
+  // This function is called with the true heading is updated and
+  // it is the *controlling* source, so the mag heading is calculated from it.
+  // In reality this is probably never used, unless you have a sensor 
+  // which is specifically a GPS based true heading sensor.
+  // Note, Deviation is not touched here as there is no point to "back calculate"
+  // A magnetic sensor value. We only care about magnetic heading.
+  if (!N2kIsNA(HeadingTrueSensor) && !NMEA0183IsNA(HeadingTrueSensor)) {
+    // True heading is good. We can begin to use this.
+    HeadingTrue = HeadingTrueSensor;
+    // If we have variation, subtract it from the true heading to get magnetic    
+    if (!N2kIsNA(Variation) && !NMEA0183IsNA(Variation)) { 
+      HeadingMagnetic = WrapAngle(HeadingTrue - Variation);
+    }
+    LastHeadingTrueSensorTime = millis();
+  } else {
+    // Must have an expired true sensor reading. This creates a few problems.
+    // 1) HeadingTrue can be retrieved from the true sensor, or mag sensor plus variation.
+    //    So if mag or variation are also gone, we have no HeadingTrue
+    // 2) HeadingMagnetic can be retrieved from the mag sensor, or true sensor minus variation.
+    //    So if mag sensor is also gone, we have no HeadingMagnetic
+    if (N2kIsNA(HeadingMagSensor) || NMEA0183IsNA(HeadingMagSensor)) {
+      // Case 2)
+      HeadingMagnetic = N2kDoubleNA;
+    } else if (N2kIsNA(Variation) || NMEA0183IsNA(Variation)) {
+      // Case 1)
+      HeadingTrue = N2kDoubleNA;
     }
   }
 }
 
 //*****************************************************************************
 void tN2kDataToNMEA0183::HandleVariation(const tN2kMsg &N2kMsg) {
-unsigned char SID;
-tN2kMagneticVariation Source;
-
-  ParseN2kMagneticVariation(N2kMsg,SID,Source,DaysSince1970,Variation);
+  unsigned char SID;
+  tN2kMagneticVariation Source;
+  double _Variation;
+  if (ParseN2kMagneticVariation(N2kMsg,SID,Source,DaysSince1970,_Variation)) {
+    if (!N2kIsNA(_Variation)) Variation = _Variation; // Update Variation
+  }
 }
 
 //*****************************************************************************
@@ -96,8 +223,7 @@ tN2kSpeedWaterReferenceType SWRT;
 
   if ( ParseN2kBoatSpeed(N2kMsg,SID,WaterReferenced,GroundReferenced,SWRT) ) {
     tNMEA0183Msg NMEA0183Msg;
-    double MagneticHeading=( !N2kIsNA(Heading) && !N2kIsNA(Variation)?Heading+Variation: NMEA0183DoubleNA);
-    if ( NMEA0183SetVHW(NMEA0183Msg,Heading,MagneticHeading,WaterReferenced) ) {
+    if ( NMEA0183SetVHW(NMEA0183Msg,HeadingTrue,HeadingMagnetic,WaterReferenced) ) {
       SendMessage(NMEA0183Msg);
     }
   }
@@ -221,3 +347,12 @@ void tN2kDataToNMEA0183::SendRMC() {
     }
 }
 
+//*****************************************************************************
+float tN2kDataToNMEA0183::WrapAngle(float angle) {
+  // Wraps any angles going outside [0, 2*pi)
+  angle = fmod(angle, 2*M_PI);
+  if (angle < 0) {
+    angle += 2*M_PI;
+  }
+  return angle;
+}

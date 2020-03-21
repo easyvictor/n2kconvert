@@ -8,8 +8,9 @@ bool SetOptions(
   // Outputs
   std::string* config_file,
   std::string* can_port,
+  std::string* aux_in_serial, 
   std::string* out_stream,
-  std::string* fwd_stream, 
+  std::string* fwd_stream,
   bool* debug_mode);
 
 #endif // OPTIONS_H

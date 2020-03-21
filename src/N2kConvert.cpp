@@ -56,6 +56,7 @@ static const uint32_t DefaultSerialNumber = 999999;
 // Set the information for other bus devices, which messages we support
 static const unsigned long TransmitMessages[] = {0};
 static const unsigned long ReceiveMessages[] = {
+  129033, // Date/Time
   127250, // Heading
   127258, // Magnetic Variation
   128259, // Boat Speed
@@ -77,10 +78,10 @@ using namespace std;
 // Configures the input and output streams,
 // and data conversion.
 bool Setup( tNMEA2000& NMEA2000,
-            tNMEA0183LinuxStream& NMEA0183OutStream,
-            tNMEA0183& NMEA0183,
+            tNMEA0183* pNMEA0183AuxIn,
+            tNMEA0183& NMEA0183Out,
             tN2kDataToNMEA0183& N2kDataToNMEA0183,
-            tSocketStream* ForwardStream) {
+            tSocketStream* pForwardStream) {
   bool status = false;
   // Setup NMEA2000 system
   char SnoStr[33];
@@ -100,8 +101,8 @@ bool Setup( tNMEA2000& NMEA2000,
                                 2046 // Just choosen free from code list on http://www.nmea.org/Assets/20121020%20nmea%202000%20registration%20list.pdf
                                );
   // Forward settings
-  if (ForwardStream) {
-    NMEA2000.SetForwardStream(ForwardStream);
+  if (pForwardStream) {
+    NMEA2000.SetForwardStream(pForwardStream);
     //NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
     NMEA2000.EnableForward(true);
   } else {
@@ -113,16 +114,25 @@ bool Setup( tNMEA2000& NMEA2000,
   NMEA2000.ExtendTransmitMessages(TransmitMessages);
   NMEA2000.ExtendReceiveMessages(ReceiveMessages);
   NMEA2000.AttachMsgHandler(&N2kDataToNMEA0183);
+  // Open ports
+  // Open NMEA2000 CAN
   status = NMEA2000.Open();
   if (!status) {
     cerr << "Problem opening NMEA2000 port.\n";
     return false;
   }
-  // Setup NMEA0183 ports and handlers
-  NMEA0183.SetMessageStream(&NMEA0183OutStream);
-  status = NMEA0183.Open();
+  // Open NMEA0183 aux input (optional)
+  if (pNMEA0183AuxIn) {
+    status = pNMEA0183AuxIn->Open();
+    if (!status) {
+      cerr << "Problem opening Auxiliary NMEA0183 input port.\n";
+      return false;
+    }
+  }
+  // Open NMEA013 output
+  status = NMEA0183Out.Open();
   if (!status) {
-    cerr << "Problem opening NMEA0183 port.\n";
+    cerr << "Problem opening NMEA0183Out port.\n";
     return false;
   }
   // Setup was successful
@@ -144,25 +154,17 @@ void HandleSignal(int signal) {
   run_program = false;
 }
 
-// ******** Cleanup ********
-// To be called before program exit, to clear allocated memory
-void Cleanup(tSocketStream* fwd_stream_ptr) {
-  if (fwd_stream_ptr) {
-    delete(fwd_stream_ptr);
-  }
-}
-
 // ******** Main Program ********
 int main(int argc, char* argv[]) {
   // Setup signal handler
   signal(SIGINT, HandleSignal);
   signal(SIGTERM, HandleSignal);
   // Parse arguments from cmd line annd oad config file
-  string config_file, can_port, out_stream, fwd_stream;
+  string config_file, can_port, aux_in_serial, out_stream, fwd_stream;
   bool debug_mode = false;
   bool status_ok = false;
   status_ok = SetOptions(argc, argv, // inputs
-    &config_file, &can_port, &out_stream, &fwd_stream, &debug_mode); // outputs
+    &config_file, &can_port, &aux_in_serial, &out_stream, &fwd_stream, &debug_mode); // outputs
   if (!status_ok) {
     cerr << "Problem loading options. Exiting.\n";
     return 3;
@@ -170,18 +172,24 @@ int main(int argc, char* argv[]) {
   // Create parsing objects
   tNMEA2000_SocketCAN NMEA2000((char*)can_port.c_str());
   tNMEA0183LinuxStream NMEA0183OutStream(out_stream.c_str());
-  tNMEA0183 NMEA0183;
-  tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, &NMEA0183);
+  tNMEA0183 NMEA0183Out(&NMEA0183OutStream);
+  // Optional aux input stream
+  tNMEA0183LinuxStream *pNMEA0183AuxInStream = NULL;
+  tNMEA0183 *pNMEA0183AuxIn = NULL;
+  if (!aux_in_serial.empty()) {
+    pNMEA0183AuxInStream = new tNMEA0183LinuxStream(aux_in_serial.c_str(), 4800);
+    pNMEA0183AuxIn = new tNMEA0183(pNMEA0183AuxInStream);
+  }
+  tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, pNMEA0183AuxIn, &NMEA0183Out);
   // Optional forward stream
-  tSocketStream *fwd_stream_ptr = NULL;
+  tSocketStream *pForwardStream = NULL;
   if (!fwd_stream.empty()) {
-    fwd_stream_ptr = new tSocketStream(fwd_stream.c_str());
+    pForwardStream = new tSocketStream(fwd_stream.c_str());
   }
   // Setup parsing objects
-  status_ok = Setup(NMEA2000, NMEA0183OutStream, NMEA0183, N2kDataToNMEA0183, fwd_stream_ptr);
+  status_ok = Setup(NMEA2000, pNMEA0183AuxIn, NMEA0183Out, N2kDataToNMEA0183, pForwardStream);
   if (!status_ok) {
     cerr << "Problem during Setup. Exiting.\n";
-    Cleanup(fwd_stream_ptr);
     return 3;
   }
   // Set current time for measurements
@@ -199,8 +207,11 @@ int main(int argc, char* argv[]) {
     if (debug_mode) {
       start_parse_time = chrono::steady_clock::now();
     }
-    // Parse NMEA2000 and send NMEA0183
+    // Parse NMEA2000 and send NMEA0183Out
     NMEA2000.ParseMessages();
+    if (pNMEA0183AuxIn) {
+      pNMEA0183AuxIn->ParseMessages();
+    }
     N2kDataToNMEA0183.Update();
     // Debug timing and prints
     if (debug_mode) {
@@ -216,6 +227,5 @@ int main(int argc, char* argv[]) {
     }
   }
   cout << "Exiting.\n";
-  Cleanup(fwd_stream_ptr);
   return 0;
 }

@@ -8,18 +8,26 @@ using namespace std;
 
 const string default_config_file = "/etc/n2kconvert.conf";
 const string default_can_port = "can0";
+const string default_aux_in_serial = "";
 const string default_out_stream = "/dev/stdout";
 const string debug_stream = "/dev/stdout";
 
 bool SetOptions(int argc, char* argv[],
-  string* config_file, string* can_port, string* out_stream, string* fwd_stream,
-  bool* debug_mode) {
+  string* config_file,
+  string* can_port,
+  string* aux_in_serial,
+  string* out_stream,
+  string* fwd_stream,
+  bool* debug_mode
+  ) {
   *debug_mode = false;
   // Supported command line or config file options.
   po::options_description options_generic("Config or command line options");
   options_generic.add_options()
     ("canport,c", po::value<string>(can_port)->default_value(default_can_port),
       "CAN port to read")
+    ("auxin,a", po::value<string>(aux_in_serial)->default_value(default_aux_in_serial),
+      "aux serial input of NMEA0183 to overwrite or enhance NMEA2000")
     ("output,o", po::value<string>(out_stream)->default_value(default_out_stream),
       "output file/FIFO to send NMEA0183 sentences")
     ("forward", po::value<string>(fwd_stream),
@@ -65,12 +73,14 @@ bool SetOptions(int argc, char* argv[],
   if (vm.count("debug")) {
     cout << "Debug mode enabled!\n";
     *debug_mode = true;
-    *out_stream = *fwd_stream = debug_stream;
+    *out_stream = debug_stream;
   }
   
   // Display selected ports and streams
   if (vm.count("canport"))
     cout << "Reading from can port: " << *can_port << "\n";
+  if (vm.count("auxin"))
+    cout << "Reading auxiliary input serial from: "<< *aux_in_serial << "\n";
   if (vm.count("output"))
     cout << "Writing NMEA0183 data to: " << *out_stream << "\n";
   if (!fwd_stream->empty())

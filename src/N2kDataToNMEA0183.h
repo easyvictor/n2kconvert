@@ -25,7 +25,7 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <NMEA2000.h>
 
 //------------------------------------------------------------------------------
-class tN2kDataToNMEA0183 : public tNMEA2000::tMsgHandler {
+class tN2kDataToNMEA0183 : public tNMEA2000::tMsgHandler, public tNMEA0183::tMsgHandler {
 public:
   using tSendNMEA0183MessageCallback=void (*)(const tNMEA0183Msg &NMEA0183Msg);
     
@@ -35,12 +35,17 @@ protected:
   double Longitude;
   double Altitude;
   double Variation;
-  double Heading;
+  double Deviation;
+  double HeadingMagSensor;
+  double HeadingMagnetic;
+  double HeadingTrue;
+  double HeadingTrueSensor;
   double COG;
   double SOG;
   double WindSpeed;
   double WindAngle;
-  unsigned long LastHeadingTime;
+  unsigned long LastHeadingMagSensorTime;
+  unsigned long LastHeadingTrueSensorTime;
   unsigned long LastCOGSOGTime;
   unsigned long LastPositionTime;
   unsigned long LastPosSend;
@@ -49,10 +54,13 @@ protected:
   double SecondsSinceMidnight;
   unsigned long NextRMCSend;
 
-  tNMEA0183 *pNMEA0183;
+  tNMEA0183 *pNMEA0183Out;
+
   tSendNMEA0183MessageCallback SendNMEA0183MessageCallback;
 
 protected:
+  // NMEA2000 message handlers
+  void HandleDateTime(const tN2kMsg &N2kMsg); // 129033
   void HandleHeading(const tN2kMsg &N2kMsg); // 127250
   void HandleVariation(const tN2kMsg &N2kMsg); // 127258
   void HandleBoatSpeed(const tN2kMsg &N2kMsg); // 128259
@@ -62,25 +70,40 @@ protected:
   void HandleGNSS(const tN2kMsg &N2kMsg); // 129029
   void HandleWind(const tN2kMsg &N2kMsg); // 130306
   void HandleEnvParams(const tN2kMsg &N2kMsg); // 130311
+  // NMEA0183 message handlers (for aux input)
+  void HandleHeadingNMEA0183(const tNMEA0183Msg &NMEA0183Msg); // HDG
+  // Message senders
   void SetNextRMCSend() { NextRMCSend=millis()+RMCPeriod; }
   void SendRMC();
   void SendMessage(const tNMEA0183Msg &NMEA0183Msg);
 
+  // Utilities
+  void UpdateHeadingsNewMagnetic();
+  void UpdateHeadingsNewTrue();
+  float WrapAngle(float angle);
+
 public:
-  tN2kDataToNMEA0183(tNMEA2000 *_pNMEA2000, tNMEA0183 *_pNMEA0183) : tNMEA2000::tMsgHandler(0,_pNMEA2000) {
+  tN2kDataToNMEA0183(tNMEA2000 *_pNMEA2000, tNMEA0183 *_pNMEA0183AuxIn, tNMEA0183 *_pNMEA0183Out)
+    : tNMEA2000::tMsgHandler(0,_pNMEA2000), 
+      tNMEA0183::tMsgHandler(_pNMEA0183AuxIn) {
     SendNMEA0183MessageCallback=0;
-    pNMEA0183=_pNMEA0183;
+    pNMEA0183Out=_pNMEA0183Out;
     Latitude=N2kDoubleNA; Longitude=N2kDoubleNA; Altitude=N2kDoubleNA;
-    Variation=N2kDoubleNA; Heading=N2kDoubleNA; COG=N2kDoubleNA; SOG=N2kDoubleNA;
+    Variation=N2kDoubleNA; Deviation=N2kDoubleNA; 
+    HeadingMagSensor=N2kDoubleNA; HeadingMagnetic=N2kDoubleNA;
+    HeadingTrueSensor=N2kDoubleNA; HeadingTrue=N2kDoubleNA;
+    COG=N2kDoubleNA; SOG=N2kDoubleNA;
     SecondsSinceMidnight=N2kDoubleNA; DaysSince1970=N2kUInt16NA;
     LastPosSend=0;
     NextRMCSend=millis()+RMCPeriod;
-    LastHeadingTime=0;
+    LastHeadingMagSensorTime=0;
+    LastHeadingTrueSensorTime=0;
     LastCOGSOGTime=0;
     LastPositionTime=0;
     LastWindTime=0;
   }
   void HandleMsg(const tN2kMsg &N2kMsg);
+  void HandleMsg(const tNMEA0183Msg &NMEA0183Msg);
   void SetSendNMEA0183MessageCallback(tSendNMEA0183MessageCallback _SendNMEA0183MessageCallback) {
     SendNMEA0183MessageCallback=_SendNMEA0183MessageCallback;
   }
