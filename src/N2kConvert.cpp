@@ -160,11 +160,11 @@ int main(int argc, char* argv[]) {
   signal(SIGINT, HandleSignal);
   signal(SIGTERM, HandleSignal);
   // Parse arguments from cmd line annd oad config file
-  string config_file, can_port, aux_in_serial, out_stream, fwd_stream;
+  string config_file, can_port, aux_in_serial, aux_in_baud, out_stream, fwd_stream;
   bool debug_mode = false;
   bool status_ok = false;
   status_ok = SetOptions(argc, argv, // inputs
-    &config_file, &can_port, &aux_in_serial, &out_stream, &fwd_stream, &debug_mode); // outputs
+    &config_file, &can_port, &aux_in_serial, &aux_in_baud, &out_stream, &fwd_stream, &debug_mode); // outputs
   if (!status_ok) {
     cerr << "Problem loading options. Exiting.\n";
     return 3;
@@ -176,8 +176,8 @@ int main(int argc, char* argv[]) {
   // Optional aux input stream
   tNMEA0183LinuxStream *pNMEA0183AuxInStream = NULL;
   tNMEA0183 *pNMEA0183AuxIn = NULL;
-  if (!aux_in_serial.empty()) {
-    pNMEA0183AuxInStream = new tNMEA0183LinuxStream(aux_in_serial.c_str(), 4800);
+  if (!aux_in_serial.empty() && !aux_in_baud.empty()) {
+    pNMEA0183AuxInStream = new tNMEA0183LinuxStream(aux_in_serial.c_str(), atoi(aux_in_baud.c_str()));
     pNMEA0183AuxIn = new tNMEA0183(pNMEA0183AuxInStream);
   }
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, pNMEA0183AuxIn, &NMEA0183Out);

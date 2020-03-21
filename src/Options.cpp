@@ -9,6 +9,7 @@ using namespace std;
 const string default_config_file = "/etc/n2kconvert.conf";
 const string default_can_port = "can0";
 const string default_aux_in_serial = "";
+const string default_aux_in_baud = "";
 const string default_out_stream = "/dev/stdout";
 const string debug_stream = "/dev/stdout";
 
@@ -16,6 +17,7 @@ bool SetOptions(int argc, char* argv[],
   string* config_file,
   string* can_port,
   string* aux_in_serial,
+  string* aux_in_baud,
   string* out_stream,
   string* fwd_stream,
   bool* debug_mode
@@ -28,6 +30,8 @@ bool SetOptions(int argc, char* argv[],
       "CAN port to read")
     ("auxin,a", po::value<string>(aux_in_serial)->default_value(default_aux_in_serial),
       "aux serial input of NMEA0183 to overwrite or enhance NMEA2000")
+    ("auxinbaud,b", po::value<string>(aux_in_baud)->default_value(default_aux_in_baud),
+      "aux serial input baud rate")
     ("output,o", po::value<string>(out_stream)->default_value(default_out_stream),
       "output file/FIFO to send NMEA0183 sentences")
     ("forward", po::value<string>(fwd_stream),
@@ -80,7 +84,8 @@ bool SetOptions(int argc, char* argv[],
   if (vm.count("canport"))
     cout << "Reading from can port: " << *can_port << "\n";
   if (vm.count("auxin"))
-    cout << "Reading auxiliary input serial from: "<< *aux_in_serial << "\n";
+    cout << "Reading auxiliary input serial from: "<< *aux_in_serial
+         << " using baud rate: " << *aux_in_baud << "\n";
   if (vm.count("output"))
     cout << "Writing NMEA0183 data to: " << *out_stream << "\n";
   if (!fwd_stream->empty())
