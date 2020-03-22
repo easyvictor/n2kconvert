@@ -56,7 +56,6 @@ static const uint32_t DefaultSerialNumber = 999999;
 // Set the information for other bus devices, which messages we support
 static const unsigned long TransmitMessages[] = {0};
 static const unsigned long ReceiveMessages[] = {
-  129033, // Date/Time
   127250, // Heading
   127258, // Magnetic Variation
   128259, // Boat Speed

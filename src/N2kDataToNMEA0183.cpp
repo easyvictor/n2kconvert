@@ -32,7 +32,6 @@ const double radToDeg=180.0/M_PI;
 // Handle incoming NMEA2000 messages
 void tN2kDataToNMEA0183::HandleMsg(const tN2kMsg &N2kMsg) {
   switch (N2kMsg.PGN) {
-    case 129033UL: HandleDateTime(N2kMsg);
     case 127250UL: HandleHeading(N2kMsg);
     case 127258UL: HandleVariation(N2kMsg);
     case 128259UL: HandleBoatSpeed(N2kMsg);
@@ -74,10 +73,6 @@ void tN2kDataToNMEA0183::Update() {
 void tN2kDataToNMEA0183::SendMessage(const tNMEA0183Msg &NMEA0183Msg) {
   if ( pNMEA0183Out!=0 ) pNMEA0183Out->SendMessage(NMEA0183Msg);
   if ( SendNMEA0183MessageCallback!=0 ) SendNMEA0183MessageCallback(NMEA0183Msg);
-}
-
-//*****************************************************************************
-void tN2kDataToNMEA0183::HandleDateTime(const tN2kMsg &N2kMsg) {
 }
 
 //*****************************************************************************
@@ -294,7 +289,13 @@ double AgeOfCorrection;
   if ( ParseN2kGNSS(N2kMsg,SID,DaysSince1970,SecondsSinceMidnight,Latitude,Longitude,Altitude,GNSStype,GNSSmethod,
                     nSatellites,HDOP,PDOP,GeoidalSeparation,
                     nReferenceStations,ReferenceStationType,ReferenceSationID,AgeOfCorrection) ) {
-    LastPositionTime=millis();
+    LastPositionTime=millis(); 
+    // RMC will be sent as part of later update, once more data has arrived.
+    // But we should send time message immediately.
+    tNMEA0183Msg NMEA0183MsgZDA;
+    if (NMEA0183SetZDA(NMEA0183MsgZDA, SecondsSinceMidnight, DaysSince1970)) {
+      SendMessage(NMEA0183MsgZDA);
+    }
   }
 }
 

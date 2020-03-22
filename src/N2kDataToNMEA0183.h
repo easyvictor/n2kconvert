@@ -60,7 +60,6 @@ protected:
 
 protected:
   // NMEA2000 message handlers
-  void HandleDateTime(const tN2kMsg &N2kMsg); // 129033
   void HandleHeading(const tN2kMsg &N2kMsg); // 127250
   void HandleVariation(const tN2kMsg &N2kMsg); // 127258
   void HandleBoatSpeed(const tN2kMsg &N2kMsg); // 128259
