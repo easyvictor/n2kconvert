@@ -1,0 +1,14 @@
+[Unit]
+Description=GPS system time synchronizer
+After=kplex.service
+
+[Service]
+ExecStart=/usr/bin/gpstimesync.py
+StandardOutput=syslog
+StandardError=inherit
+Restart=always
+RestartSec=1
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
