@@ -3,6 +3,7 @@ Description=GPS system time synchronizer
 After=kplex.service
 
 [Service]
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/gpstimesync.py
 StandardOutput=syslog
 StandardError=inherit
