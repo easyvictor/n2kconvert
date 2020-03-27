@@ -66,7 +66,12 @@ void tN2kDataToNMEA0183::Update() {
   }
   if (LastCOGSOGTime+2000<millis()) { COG=N2kDoubleNA; SOG=N2kDoubleNA; }
   if (LastPositionTime+4000<millis()) { Latitude=N2kDoubleNA; Longitude=N2kDoubleNA; }
-  if (LastWindTime+2000<millis()) { WindSpeed=N2kDoubleNA; WindAngle=N2kDoubleNA; }
+  if (LastWindTime+2000<millis()) {
+    WindSpeedApp = N2kDoubleNA;
+    WindAngleApp = N2kDoubleNA;
+    WindSpeedTrue = N2kDoubleNA;
+    WindDirTrue = N2kDoubleNA;
+  }
 }
 
 //*****************************************************************************
@@ -261,10 +266,12 @@ tNMEA0183Msg NMEA0183Msg;
 
   if ( ParseN2kCOGSOGRapid(N2kMsg,SID,HeadingReference,COG,SOG) ) {
     LastCOGSOGTime=millis();
-    double MCOG=( !N2kIsNA(COG) && !N2kIsNA(Variation)?COG-Variation:NMEA0183DoubleNA );
+    double MCOG = (!N2kIsNA(COG) && !N2kIsNA(Variation))
+      ? WrapAngle(COG - Variation)
+      : NMEA0183DoubleNA;
     if ( HeadingReference==N2khr_magnetic ) {
       MCOG=COG;
-      if ( !N2kIsNA(Variation) ) COG-=Variation;
+      if ( !N2kIsNA(Variation) ) COG = WrapAngle(MCOG + Variation);
     }
     if ( NMEA0183SetVTG(NMEA0183Msg,COG,MCOG,SOG) ) {
       SendMessage(NMEA0183Msg);
@@ -301,17 +308,28 @@ double AgeOfCorrection;
 
 //*****************************************************************************
 void tN2kDataToNMEA0183::HandleWind(const tN2kMsg &N2kMsg) {
-unsigned char SID;
-tN2kWindReference WindReference;
-tNMEA0183WindReference NMEA0183Reference=NMEA0183Wind_True;
-
+  unsigned char SID;
+  tN2kWindReference WindReference = N2kWind_Apparent;
+  double WindSpeed = N2kDoubleNA;
+  double WindAngle = N2kDoubleNA;
   if ( ParseN2kWindSpeed(N2kMsg,SID,WindSpeed,WindAngle,WindReference) ) {
-    tNMEA0183Msg NMEA0183Msg;
+    tNMEA0183Msg NMEA0183MsgMWV, NMEA0183MsgMWD;
     LastWindTime=millis();
-    if ( WindReference==N2kWind_Apparent ) NMEA0183Reference=NMEA0183Wind_Apparent;
-
-    if ( NMEA0183SetMWV(NMEA0183Msg, WindAngle*radToDeg, NMEA0183Reference , WindSpeed) ) {
-      SendMessage(NMEA0183Msg);
+    if ( WindReference==N2kWind_Apparent ) {
+      // Only handle apparent wind for now
+      WindAngleApp = WindAngle;
+      WindSpeedApp = WindSpeed;
+      if (NMEA0183SetMWV(NMEA0183MsgMWV,  WindAngleApp*radToDeg, NMEA0183Wind_Apparent, WindSpeedApp)) {
+        SendMessage(NMEA0183MsgMWV);
+      }
+      CalcTrueWind();
+      if (WindDirTrue != N2kDoubleNA && WindSpeedTrue != N2kDoubleNA) {
+        double WindDirMag_deg = (Variation != N2kDoubleNA) ? WrapAngle(WindDirTrue - Variation)*radToDeg : N2kDoubleNA;
+        double WindDirTrue_deg = WindDirTrue * radToDeg;
+        if (NMEA0183SetMWD(NMEA0183MsgMWD, WindDirTrue_deg, WindDirMag_deg, WindSpeedTrue)) {
+          SendMessage(NMEA0183MsgMWD);
+        }
+      }
     }
   }
 }
@@ -356,4 +374,31 @@ float tN2kDataToNMEA0183::WrapAngle(float angle) {
     angle += 2*M_PI;
   }
   return angle;
+}
+
+//*****************************************************************************
+void tN2kDataToNMEA0183::CalcTrueWind() {
+  double vWindApp_NE[2];
+  double vWindTrue_NE[2];
+  double vBoatVelocity_NE[2];
+  double WindAngleApp_NE;
+  // Need all this data to correctly calculate true wind speed and dir
+  if (HeadingTrue == N2kDoubleNA
+   || WindAngleApp == N2kDoubleNA
+   || WindSpeedApp == N2kDoubleNA
+   || COG == N2kDoubleNA
+   || SOG == N2kDoubleNA ) {
+    WindDirTrue = N2kDoubleNA;
+    WindSpeedTrue = N2kDoubleNA;
+  } else {
+    WindAngleApp_NE = HeadingTrue + WindAngleApp;
+    vWindApp_NE[0] = WindSpeedApp * cos(WindAngleApp_NE);
+    vWindApp_NE[1] = WindSpeedApp * sin(WindAngleApp_NE);
+    vBoatVelocity_NE[0] = SOG * cos(COG);
+    vBoatVelocity_NE[1] = SOG * sin(COG);
+    vWindTrue_NE[0] = vWindApp_NE[0] - vBoatVelocity_NE[0];
+    vWindTrue_NE[1] = vWindApp_NE[1] - vBoatVelocity_NE[1];
+    WindDirTrue = WrapAngle(atan2(vWindTrue_NE[1], vWindTrue_NE[0]));
+    WindSpeedTrue = sqrt(pow(vWindTrue_NE[0],2) + pow(vWindTrue_NE[1],2));
+  }
 }

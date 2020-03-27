@@ -42,8 +42,10 @@ protected:
   double HeadingTrueSensor;
   double COG;
   double SOG;
-  double WindSpeed;
-  double WindAngle;
+  double WindSpeedApp;
+  double WindAngleApp;
+  double WindSpeedTrue;
+  double WindDirTrue;
   unsigned long LastHeadingMagSensorTime;
   unsigned long LastHeadingTrueSensorTime;
   unsigned long LastCOGSOGTime;
@@ -80,7 +82,8 @@ protected:
   void UpdateHeadingsNewMagnetic();
   void UpdateHeadingsNewTrue();
   float WrapAngle(float angle);
-
+  void CalcTrueWind();
+  
 public:
   tN2kDataToNMEA0183(tNMEA2000 *_pNMEA2000, tNMEA0183 *_pNMEA0183AuxIn, tNMEA0183 *_pNMEA0183Out)
     : tNMEA2000::tMsgHandler(0,_pNMEA2000), 
@@ -91,6 +94,8 @@ public:
     Variation=N2kDoubleNA; Deviation=N2kDoubleNA; 
     HeadingMagSensor=N2kDoubleNA; HeadingMagnetic=N2kDoubleNA;
     HeadingTrueSensor=N2kDoubleNA; HeadingTrue=N2kDoubleNA;
+    WindAngleApp=N2kDoubleNA; WindSpeedApp=N2kDoubleNA;
+    WindDirTrue=N2kDoubleNA; WindSpeedTrue=N2kDoubleNA;
     COG=N2kDoubleNA; SOG=N2kDoubleNA;
     SecondsSinceMidnight=N2kDoubleNA; DaysSince1970=N2kUInt16NA;
     LastPosSend=0;
