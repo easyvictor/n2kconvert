@@ -189,6 +189,9 @@ int main(int argc, char* argv[]) {
   status_ok = Setup(NMEA2000, pNMEA0183AuxIn, NMEA0183Out, N2kDataToNMEA0183, pForwardStream);
   if (!status_ok) {
     cerr << "Problem during Setup. Exiting.\n";
+    delete pForwardStream;
+    delete pNMEA0183AuxIn;
+    delete pNMEA0183AuxInStream;
     return 3;
   }
   // Set current time for measurements
@@ -226,5 +229,8 @@ int main(int argc, char* argv[]) {
     }
   }
   cout << "Exiting.\n";
+  delete pForwardStream;
+  delete pNMEA0183AuxIn;
+  delete pNMEA0183AuxInStream;
   return 0;
 }
