@@ -176,7 +176,7 @@ int main(int argc, char* argv[]) {
   tNMEA0183LinuxStream *pNMEA0183AuxInStream = NULL;
   tNMEA0183 *pNMEA0183AuxIn = NULL;
   if (!aux_in_serial.empty() && !aux_in_baud.empty()) {
-    pNMEA0183AuxInStream = new tNMEA0183LinuxStream(aux_in_serial.c_str(), atoi(aux_in_baud.c_str()));
+    pNMEA0183AuxInStream = new tNMEA0183LinuxStream(aux_in_serial.c_str(), atoi(aux_in_baud.c_str()), true);
     pNMEA0183AuxIn = new tNMEA0183(pNMEA0183AuxInStream);
   }
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, pNMEA0183AuxIn, &NMEA0183Out);
