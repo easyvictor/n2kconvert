@@ -27,6 +27,7 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <math.h>
 
 const double radToDeg=180.0/M_PI;
+const double mToFeet=3.2808398950131;
 
 //*****************************************************************************
 // Handle incoming NMEA2000 messages
@@ -238,9 +239,12 @@ double Range;
 
   if ( ParseN2kWaterDepth(N2kMsg,SID,DepthBelowTransducer,Offset,Range) ) {
       tNMEA0183Msg NMEA0183Msg;
+      // If user here has set a depth offset, apply it as well
+      if (DepthOffset_ft != N2kDoubleNA)
+        Offset += DepthOffset_ft / mToFeet;
       if ( NMEA0183SetDPT(NMEA0183Msg,DepthBelowTransducer,Offset) ) {
         SendMessage(NMEA0183Msg);
-      }
+      } 
       if ( NMEA0183SetDBT(NMEA0183Msg,DepthBelowTransducer) ) {
         SendMessage(NMEA0183Msg);
       }

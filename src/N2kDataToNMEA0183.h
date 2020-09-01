@@ -46,6 +46,7 @@ protected:
   double WindAngleApp;
   double WindSpeedTrue;
   double WindDirTrue;
+  double DepthOffset_ft;
   unsigned long LastHeadingMagSensorTime;
   unsigned long LastHeadingTrueSensorTime;
   unsigned long LastCOGSOGTime;
@@ -98,6 +99,7 @@ public:
     WindDirTrue=N2kDoubleNA; WindSpeedTrue=N2kDoubleNA;
     COG=N2kDoubleNA; SOG=N2kDoubleNA;
     SecondsSinceMidnight=N2kDoubleNA; DaysSince1970=N2kUInt16NA;
+    DepthOffset_ft=N2kDoubleNA;
     LastPosSend=0;
     NextRMCSend=millis()+RMCPeriod;
     LastHeadingMagSensorTime=0;
@@ -110,6 +112,9 @@ public:
   void HandleMsg(const tNMEA0183Msg &NMEA0183Msg);
   void SetSendNMEA0183MessageCallback(tSendNMEA0183MessageCallback _SendNMEA0183MessageCallback) {
     SendNMEA0183MessageCallback=_SendNMEA0183MessageCallback;
+  }
+  void SetDepthOffset(double depth_offset_ft) {
+    DepthOffset_ft = depth_offset_ft;
   }
   void Update();
 };

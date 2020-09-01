@@ -160,10 +160,11 @@ int main(int argc, char* argv[]) {
   signal(SIGTERM, HandleSignal);
   // Parse arguments from cmd line annd oad config file
   string config_file, can_port, aux_in_serial, aux_in_baud, out_stream, fwd_stream;
+  double depth_offset_ft = 0.0;
   bool debug_mode = false;
   bool status_ok = false;
   status_ok = SetOptions(argc, argv, // inputs
-    &config_file, &can_port, &aux_in_serial, &aux_in_baud, &out_stream, &fwd_stream, &debug_mode); // outputs
+    &config_file, &can_port, &aux_in_serial, &aux_in_baud, &out_stream, &fwd_stream, &depth_offset_ft, &debug_mode); // outputs
   if (!status_ok) {
     cerr << "Problem loading options. Exiting.\n";
     return 3;
@@ -180,6 +181,7 @@ int main(int argc, char* argv[]) {
     pNMEA0183AuxIn = new tNMEA0183(pNMEA0183AuxInStream);
   }
   tN2kDataToNMEA0183 N2kDataToNMEA0183(&NMEA2000, pNMEA0183AuxIn, &NMEA0183Out);
+  N2kDataToNMEA0183.SetDepthOffset(depth_offset_ft);
   // Optional forward stream
   tSocketStream *pForwardStream = NULL;
   if (!fwd_stream.empty()) {

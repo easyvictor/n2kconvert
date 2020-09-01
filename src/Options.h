@@ -12,6 +12,7 @@ bool SetOptions(
   std::string* aux_in_baud,
   std::string* out_stream,
   std::string* fwd_stream,
+  double* depth_offset_ft,
   bool* debug_mode);
 
 #endif // OPTIONS_H

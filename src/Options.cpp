@@ -11,6 +11,7 @@ const string default_can_port = "can0";
 const string default_aux_in_serial = "";
 const string default_aux_in_baud = "";
 const string default_out_stream = "/dev/stdout";
+const double default_depth_offset_ft = 0.0;
 const string debug_stream = "/dev/stdout";
 
 bool SetOptions(int argc, char* argv[],
@@ -20,6 +21,7 @@ bool SetOptions(int argc, char* argv[],
   string* aux_in_baud,
   string* out_stream,
   string* fwd_stream,
+  double* depth_offset_ft,
   bool* debug_mode
   ) {
   *debug_mode = false;
@@ -36,6 +38,8 @@ bool SetOptions(int argc, char* argv[],
       "output file/FIFO to send NMEA0183 sentences")
     ("forward", po::value<string>(fwd_stream),
       "output file/FIFO to forward NMEA2000 data")
+    ("depth,d", po::value<double>(depth_offset_ft)->default_value(default_depth_offset_ft),
+      "depth offset (ft) to apply to transducer (DPT message)")
   ;
   // Supported command line only options
   po::options_description options_cmdline_only("Command line only options");
@@ -90,6 +94,8 @@ bool SetOptions(int argc, char* argv[],
     cout << "Writing NMEA0183 data to: " << *out_stream << "\n";
   if (!fwd_stream->empty())
     cout << "Forwarding NMEA2000 data to: " << *fwd_stream << "\n";
+  if (vm.count("depth"))
+    cout << "Depth offset set to: " << *depth_offset_ft << "ft\n";
 
   return true;
 }
