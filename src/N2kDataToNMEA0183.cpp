@@ -65,6 +65,8 @@ void tN2kDataToNMEA0183::Update() {
     HeadingTrueSensor = N2kDoubleNA; 
     UpdateHeadingsNewTrue(); // Update dependent variables accordingly
   }
+  if (LastMagDeviationTime+4000 < millis()) { Deviation=N2kDoubleNA; }
+  if (LastMagVariationTime+4000 < millis()) { Variation=N2kDoubleNA; }
   if (LastCOGSOGTime+2000<millis()) { COG=N2kDoubleNA; SOG=N2kDoubleNA; }
   if (LastPositionTime+4000<millis()) { Latitude=N2kDoubleNA; Longitude=N2kDoubleNA; }
   if (LastWindTime+2000<millis()) {
@@ -89,9 +91,18 @@ double _Deviation, _Variation, _Heading;
 
   if (ParseN2kHeading(N2kMsg, SID, _Heading, _Deviation, _Variation, ref)) {
     if (ref == N2khr_magnetic) {
-      if (!N2kIsNA(_Heading)) HeadingMagSensor = _Heading; // Update magnetic sensor heading
-      if (!N2kIsNA(_Variation)) Variation = _Variation; // Update Variation
-      if (!N2kIsNA(_Deviation)) Deviation = _Deviation; // Update Deviation
+      if (!NMEA0183IsNA(_Heading)) {
+        HeadingMagSensor=_Heading; // Update magnetic sensor heading
+        LastHeadingMagSensorTime = millis();
+      }
+      if (!NMEA0183IsNA(_Variation)) {
+        Variation=_Variation; // Update Variation
+        LastMagVariationTime = millis();
+      }
+      if (!NMEA0183IsNA(_Deviation)) {
+        Deviation=_Deviation; // Update Deviation
+        LastMagDeviationTime = millis();
+      }
       UpdateHeadingsNewMagnetic();
       // Send HDG message
       tNMEA0183Msg NMEA0183MsgHDG;
@@ -106,7 +117,10 @@ double _Deviation, _Variation, _Heading;
         }
       }
     } else if (ref == N2khr_true) {
-      if (!N2kIsNA(_Heading)) HeadingTrueSensor = _Heading; // Update true heading
+      if (!N2kIsNA(_Heading)) {
+        HeadingTrueSensor = _Heading; // Update true heading
+        LastHeadingTrueSensorTime = millis();
+      }
       UpdateHeadingsNewTrue();
       // Send HDT message
       tNMEA0183Msg NMEA0183MsgHDT;
@@ -122,9 +136,18 @@ double _Deviation, _Variation, _Heading;
 void tN2kDataToNMEA0183::HandleHeadingNMEA0183(const tNMEA0183Msg &NMEA0183Msg) {
   double _Heading, _Deviation, _Variation;
   if (NMEA0183ParseHDG_nc(NMEA0183Msg, _Heading, _Deviation, _Variation)) {
-    if (!NMEA0183IsNA(_Heading)) HeadingMagSensor=_Heading; // Update magnetic sensor heading
-    if (!NMEA0183IsNA(_Variation)) Variation=_Variation; // Update Variation
-    if (!NMEA0183IsNA(_Deviation)) Deviation=_Deviation; // Update Deviation
+    if (!NMEA0183IsNA(_Heading)) {
+      HeadingMagSensor=_Heading; // Update magnetic sensor heading
+      LastHeadingMagSensorTime = millis();
+    }
+    if (!NMEA0183IsNA(_Variation)) {
+      Variation=_Variation; // Update Variation
+      LastMagVariationTime = millis();
+    }
+    if (!NMEA0183IsNA(_Deviation)) {
+      Deviation=_Deviation; // Update Deviation
+      LastMagDeviationTime = millis();
+    }
     UpdateHeadingsNewMagnetic();
     // Send HDG message
     tNMEA0183Msg NMEA0183MsgHDG;
@@ -157,7 +180,6 @@ void tN2kDataToNMEA0183::UpdateHeadingsNewMagnetic() {
     if (!N2kIsNA(Variation) && !NMEA0183IsNA(Variation)) { 
       HeadingTrue = WrapAngle(HeadingMagnetic + Variation);
     }
-    LastHeadingMagSensorTime = millis();
   } else {
     // Must have an expired mag sensor reading. This creates a few problems.
     // 1) HeadingMagnetic can be retrieved from the mag sensor, or true sensor minus variation.
@@ -188,7 +210,6 @@ void tN2kDataToNMEA0183::UpdateHeadingsNewTrue() {
     if (!N2kIsNA(Variation) && !NMEA0183IsNA(Variation)) { 
       HeadingMagnetic = WrapAngle(HeadingTrue - Variation);
     }
-    LastHeadingTrueSensorTime = millis();
   } else {
     // Must have an expired true sensor reading. This creates a few problems.
     // 1) HeadingTrue can be retrieved from the true sensor, or mag sensor plus variation.
@@ -211,7 +232,10 @@ void tN2kDataToNMEA0183::HandleVariation(const tN2kMsg &N2kMsg) {
   tN2kMagneticVariation Source;
   double _Variation;
   if (ParseN2kMagneticVariation(N2kMsg,SID,Source,DaysSince1970,_Variation)) {
-    if (!N2kIsNA(_Variation)) Variation = _Variation; // Update Variation
+    if (!N2kIsNA(_Variation)) {
+      Variation = _Variation; // Update Variation
+      LastMagVariationTime = millis();
+    }
   }
 }
 

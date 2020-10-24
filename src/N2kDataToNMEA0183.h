@@ -49,6 +49,8 @@ protected:
   double DepthOffset_ft;
   unsigned long LastHeadingMagSensorTime;
   unsigned long LastHeadingTrueSensorTime;
+  unsigned long LastMagDeviationTime;
+  unsigned long LastMagVariationTime;
   unsigned long LastCOGSOGTime;
   unsigned long LastPositionTime;
   unsigned long LastPosSend;
@@ -104,6 +106,8 @@ public:
     NextRMCSend=millis()+RMCPeriod;
     LastHeadingMagSensorTime=0;
     LastHeadingTrueSensorTime=0;
+    LastMagDeviationTime=0;
+    LastMagVariationTime=0;
     LastCOGSOGTime=0;
     LastPositionTime=0;
     LastWindTime=0;
